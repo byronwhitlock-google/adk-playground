@@ -26,10 +26,12 @@ Role: Generates the visual content for each scene of the commercial using Veo2.
 
 Key Responsibilities:
 
-Receive a list of scene descriptions and shot specifications from the Producer Agent.
+Receive a scene description from the Producer Agent.
+
+Create a shot list of each scene in the script.
 
 Translate those descriptions into detailed Veo2 prompts for each scene. 
-Use the veo2 video_generation_tool to generate a clip for each scene.
+Use the veo2 video_generation_tool to generate a clip.
 
 Generate high-quality video clips that match the creative brief.
 

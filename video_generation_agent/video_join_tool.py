@@ -1,5 +1,4 @@
 
-import time
 from google.cloud.video import transcoder_v1
 from google.cloud.video.transcoder_v1.types import Job
 from google.api_core.exceptions import GoogleAPIError
@@ -28,18 +27,20 @@ async def video_join_tool(
                                 (e.g., ["gs://your-bucket/file1.mp4", "gs://your-bucket/file2.mp4"]).
         output_uri_prefix (str): GCS URI prefix for the output directory
                                  (e.g., "gs://your-output-bucket/output-folder/").
-                                 The Transcoder API will append the generated output_filename to this prefix.
+                                 The Transcoder API will append the output_filename to this prefix.
+        output_filename (str): The name of the final joined MP4 file (e.g., "joined_video.mp4").
 
     Returns:
         str: The GCS URI of the successfully joined MP4 file.
 
     Raises:
-        ValueError: If the input_uris list is empty,  or if project ID cannot be inferred.
+        ValueError: If the input_uris list is empty, output_filename is empty, or if project ID cannot be inferred.
         Exception: If the Transcoder job fails or encounters an error.
     """
     if not input_uris:
         raise ValueError("The 'input_uris' list cannot be empty. Please provide at least one input URI.")
-
+    if not output_filename:
+        raise ValueError("The 'output_filename' cannot be empty.")
     if not location:
         raise ValueError("The 'location' argument cannot be empty.")
     if not output_uri_prefix:
@@ -59,9 +60,6 @@ async def video_join_tool(
     # Ensure output_uri_prefix ends with a slash for proper GCS path construction
     if not output_uri_prefix.endswith('/'):
         output_uri_prefix += '/'
-    
-    output_filename = f"output_video_{int(time.time())}.mp4"
-
 
     # Use the async client
     client = transcoder_v1.TranscoderServiceAsyncClient()
@@ -133,7 +131,7 @@ async def video_join_tool(
             key="final_mp4_output",
             container="mp4",
             elementary_streams=mux_elementary_streams,
-            file_name= output_filename, # The actual filename within the output_uri_prefix folder
+            file_name=output_filename, # The actual filename within the output_uri_prefix folder
         )
     )
 
@@ -213,3 +211,52 @@ async def video_join_tool(
         traceback.print_exc()
         print("--- End of error details ---\n")
         raise e
+
+# --- Example Usage (async context required) ---
+async def main():
+    """Example of how to run the video_join_tool."""
+    try:
+        # --- IMPORTANT: Replace with your actual values or ensure environment variables are set ---
+        gcp_project_id = "your-gcp-project-id" # Replace or ensure GOOGLE_CLOUD_PROJECT is set
+        gcp_location = "us-central1"          # Replace with your desired GCP region
+
+        # Example input files in GCS (ensure these exist and your service account has access)
+        input_video_uris = [
+            f"gs://{gcp_project_id}-my-videos/input_segment_01.mp4", # Replace with your bucket and files
+            f"gs://{gcp_project_id}-my-videos/input_segment_02.mp4"  # Replace with your bucket and files
+        ]
+        # Example output location in GCS (ensure the bucket exists and your service account has write access)
+        output_gcs_prefix = f"gs://{gcp_project_id}-my-videos-output/concatenated/" # Replace with your bucket
+        output_file_name = "final_concatenated_video.mp4"
+        # --- End of values to replace ---
+
+
+        # Set the project ID environment variable if not already set for google.auth.default()
+        # import os
+        # if "GOOGLE_CLOUD_PROJECT" not in os.environ:
+        #     os.environ["GOOGLE_CLOUD_PROJECT"] = gcp_project_id
+
+
+        print(f"Starting video join process...")
+        print(f"Project ID (inferred/set): {google.auth.default()[1]}") # Verify inferred project ID
+        print(f"Location: {gcp_location}")
+        print(f"Input URIs: {input_video_uris}")
+        print(f"Output Prefix: {output_gcs_prefix}")
+        print(f"Output Filename: {output_file_name}")
+
+
+        output_gcs_path = await video_join_tool(
+            location=gcp_location,
+            input_uris=input_video_uris,
+            output_uri_prefix=output_gcs_prefix,
+            output_filename=output_file_name,
+        )
+        print(f"\nSuccessfully joined videos. Output available at: {output_gcs_path}")
+
+    except ValueError as ve:
+        print(f"Configuration Error: {ve}")
+    except GoogleAPIError as gae:
+        print(f"Google API Error during video joining: {gae}")
+    except Exception as ex:
+        print(f"An unexpected error occurred during video joining: {ex}")
+        traceback.print_exc()

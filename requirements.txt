@@ -1,5 +1,6 @@
 annotated-types==0.7.0
 anyio==4.9.0
+asyncio==3.4.3
 Authlib==1.5.2
 cachetools==5.5.2
 certifi==2025.4.26
@@ -22,6 +23,7 @@ google-cloud-resource-manager==1.14.2
 google-cloud-secret-manager==2.23.3
 google-cloud-speech==2.32.0
 google-cloud-storage==2.19.0
+google-cloud-texttospeech==2.27.0
 google-cloud-trace==1.16.1
 google-cloud-video-transcoder==1.15.1
 google-crc32c==1.7.1

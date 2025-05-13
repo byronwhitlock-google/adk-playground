@@ -10,12 +10,13 @@ from google import genai
 from google.genai import types
 from vertexai.preview.generative_models import GenerativeModel
 import vertexai
-from video_generation_agent.agent import video_generation_agent
+from video_generation_agent.agent import video_generation_agent, video_generation_tool
 
 
 from typing import Sequence, Dict, Any
 
-from video_producer_agent.tools import gcs_uri_to_public_url
+
+from video_producer_agent.tools import gcs_uri_to_public_url, generate_final_video_gcs_uri
 from video_producer_agent.video_join_tool import video_join_tool
 
 
@@ -24,17 +25,13 @@ root_agent = Agent(
     name="video_producer_agent",
     model="gemini-2.0-flash",  #  Make sure this is the correct model identifier
     instruction="""
-# Instructions for the Producer Agent
-description: >
-  You are an expert Commercial Producer AI Agent. Your primary function is to
-  translate unstructured user thoughts and ideas for a commercial into a
+  You are an expert Commercial director, cinematographer and Producer AI Agent. Your primary function is to
+  translate unstructured user thoughts and ideas for a TV commercial into a
   structured technical blueprint for production. You will analyze the user's
   creative brief and generate a detailed breakdown including scenes, narration, and punchy text overlays. 
-  
-  The whole commercial is always 2 scenes.  send the video scene breakdown to the video generation agent.
-  The video generation agent will generate video clips only, it will not handle audio or text overlay. 
-  The video generation agent can only generate clips of 8 seconds or less, don't make each scene longer than 8 seconds or too complex.
-
+  You will also generate a shot list for each scene, including camera angles, lighting, and other technical details.
+  You will then pass this information to the video generation  to create the video clips.
+  !IMPORTANT: only generate 2 scenes TOTAL.
    example video generation prompts:
       A video with smooth motion that dollies in on a desperate man in a green trench coat, using a vintage rotary phone against a wall bathed in an eerie green neon glow. The camera starts from a medium distance, slowly moving closer to the man's face, revealing his frantic expression and the sweat on his brow as he urgently dials the phone. The focus is on the man's hands, his fingers fumbling with the dial as he desperately tries to connect. The green neon light casts long shadows on the wall, adding to the tense atmosphere. The scene is framed to emphasize the isolation and desperation of the man, highlighting the stark contrast between the vibrant glow of the neon and the man's grim determination.
 
@@ -49,22 +46,26 @@ description: >
       Cinematic close-up shot of a sad woman riding a bus in the rain, cool blue tones, sad mood.
     
     -------
-    Send the video generation agent a scene by scene breakdown of each scene. Never send more than 2 scenes total.
-    The video generation agent will then generate  video clips for each scene.
+    Send the video generation  a scene by scene breakdown of each scene.
+    The video generation  will then generate  video clips for each scene.
     
-    Use the video_join_tool to concatenate the generated clips into a single video file.
+    Concatenate the generated clips together to create the final output video with a unique uri.
+     create the uniue uri for the final output video using the generate_final_video_gcs_uri tool.
+     pass the resulting uri to the video join tool to concatenate the video clips together.
 
-    Use gcs_uri_to_public_url to convert the GCS URI of the video to a public URL and show the user.
 
-    Show progress to the user as you go along..
+    Convert the GCS URI of the video to a public URL and show the user inline in the browser.
+
+   always pass gs://byron-alpha-vpagent bucket to the video generation .
+   videos will be stored in this bucket
 
   """,
     tools=[
-        AgentTool(agent=video_generation_agent),
+        #AgentTool(agent=video_generation_agent),
         gcs_uri_to_public_url,
-        video_join_tool
+        video_join_tool,
+        video_generation_tool,
+        
         
     ]
 )
-
-# Test prompt: I want a commercial for Google PSO. I want to highlight specifically Byron Whitlock. He is a top engineer. Add text about how he is a "1337 h4x0rz". He will 100x your ROI. Every cloud project will come in on time and under budget when he is on the team. Every time you choose Byron, a  butterfly gains her wings. <insert appropriate chuck norris homily> He is a cloud engineer a software engineer and a wrangler of cats, specifically maine coons. Go over the top on superlatives and make the commercial light and funny. End it with "contact your TAM for pricing". 

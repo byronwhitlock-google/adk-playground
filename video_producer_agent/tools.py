@@ -1,4 +1,24 @@
 import re
+import time
+
+def generate_unique_gcs_uri(bucket_name: str) -> str:
+    """
+    Generates a a unique Google Cloud Storage (GCS) URI suitable for a final output video file.
+
+    Args:
+        bucket_name: The name of the GCS bucket.
+
+    Returns:
+        A unique GCS URI string in the format "gs://bucket_name/object_name".
+
+    Raises:
+        ValueError: If the bucket name or object name is invalid.
+    """
+    if not re.match(r'^[a-z0-9_.-]+$', bucket_name):
+        raise ValueError("Invalid bucket name: Must contain only lowercase letters, numbers, underscores, hyphens, and periods.")
+
+    object_name = f"output_video_{int(time.time())}.mp4"
+    return f"gs://{bucket_name}/{object_name}"
 
 def gcs_uri_to_public_url(gcs_uri: str) -> str:
     """
