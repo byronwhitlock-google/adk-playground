@@ -1,21 +1,20 @@
-
 import time
 from google.cloud.video import transcoder_v1
 from google.cloud.video.transcoder_v1.types import Job
 from google.api_core.exceptions import GoogleAPIError
 import asyncio
-from typing import List
+from typing import List, Dict
 import google.auth # Import google.auth to infer project ID
 import traceback # Import traceback for better error logging
 
 async def video_join_tool(
     location: str,
-    input_uris: List[str],
+    input_streams: List[Dict[str, str]], # Updated to accept a list of dictionaries with video_uri and audio_uri
     output_uri_prefix: str,
     output_filename: str,
 ) -> str:
     """
-    Asynchronously joins a list of MP4 files in GCS using the Transcoder API and
+    Asynchronously joins a list of video and audio files in GCS using the Transcoder API and
     stores the result in GCS. Project ID is inferred from the environment.
     Operates entirely on GCS paths, avoiding local filesystem storage.
     Polls for job completion asynchronously.
@@ -24,26 +23,34 @@ async def video_join_tool(
         location (str): The GCP region for the Transcoder job. Examples: "us-central1",
                         "us-east1", "europe-west1", "asia-southeast1".
                         This cannot be inferred as Transcoder is a regional service.
-        input_uris (List[str]): A list of GCS URIs of the input MP4 files
-                                (e.g., ["gs://your-bucket/file1.mp4", "gs://your-bucket/file2.mp4"]).
+        input_streams (List[Dict[str, str]]): A list of dictionaries, each containing
+                                             'video_uri' and 'audio_uri' (e.g.,
+                                             [{'video_uri': 'gs://your-bucket/video1.mp4',
+                                               'audio_uri': 'gs://your-bucket/audio1.linear16'}, ...]).
+                                             The video stream is expected to be an MP4 video,
+                                             and the audio stream is expected to be Linear16 PCM.
         output_uri_prefix (str): GCS URI prefix for the output directory
                                  (e.g., "gs://your-output-bucket/output-folder/").
                                  The Transcoder API will append the generated output_filename to this prefix.
+        output_filename (str): The desired filename for the output MP4 file.
 
     Returns:
         str: The GCS URI of the successfully joined MP4 file.
 
     Raises:
-        ValueError: If the input_uris list is empty,  or if project ID cannot be inferred.
+        ValueError: If the input_streams list is empty, or if project ID cannot be inferred,
+                    or if URIs are invalid.
         Exception: If the Transcoder job fails or encounters an error.
     """
-    if not input_uris:
-        raise ValueError("The 'input_uris' list cannot be empty. Please provide at least one input URI.")
+    if not input_streams:
+        raise ValueError("The 'input_streams' list cannot be empty. Please provide at least one input stream pair.")
 
     if not location:
         raise ValueError("The 'location' argument cannot be empty.")
     if not output_uri_prefix:
         raise ValueError("The 'output_uri_prefix' argument cannot be empty.")
+    if not output_filename:
+        raise ValueError("The 'output_filename' argument cannot be empty.")
 
     # Infer the project ID from the environment
     try:
@@ -60,9 +67,6 @@ async def video_join_tool(
     if not output_uri_prefix.endswith('/'):
         output_uri_prefix += '/'
     
-    output_filename = f"output_video_{int(time.time())}.mp4"
-
-
     # Use the async client
     client = transcoder_v1.TranscoderServiceAsyncClient()
 
@@ -70,33 +74,43 @@ async def video_join_tool(
     parent = f"projects/{project_id}/locations/{location}"
 
     # Define the job configuration
-    job_config = transcoder_v1.types.Job() # Renamed for clarity from 'job' to 'job_config'
-                                          # to avoid conflict with the Job enum from transcoder_v1.types
-
-    job_config.output_uri = output_uri_prefix # Output prefix for the job
+    job_config = transcoder_v1.types.Job()
+    job_config.output_uri = output_uri_prefix
     job_config.config = transcoder_v1.types.JobConfig()
 
-    # Dynamically define inputs with unique keys for each URI in the list
-    for i, uri in enumerate(input_uris):
-        if not uri.startswith("gs://"):
-            raise ValueError(f"Invalid GCS URI: {uri}. Input URIs must start with 'gs://'.")
+    # Dynamically define inputs with unique keys for each video and audio URI in the list
+    for i, stream_pair in enumerate(input_streams):
+        video_uri = stream_pair.get('video_uri')
+        audio_uri = stream_pair.get('audio_uri')
+
+        if not video_uri or not audio_uri:
+            raise ValueError(f"Input stream pair at index {i} is missing 'video_uri' or 'audio_uri'.")
+
+        if not video_uri.startswith("gs://"):
+            raise ValueError(f"Invalid GCS video URI: {video_uri}. Input URIs must start with 'gs://'.")
+        if not audio_uri.startswith("gs://"):
+            raise ValueError(f"Invalid GCS audio URI: {audio_uri}. Input URIs must start with 'gs://'.")
+
+        video_input_key = f"video_input_{i}"
+        audio_input_key = f"audio_input_{i}"
+
         job_config.config.inputs.append(
-            transcoder_v1.types.Input(key=f"video_input_{i}", uri=uri)
+            transcoder_v1.types.Input(key=video_input_key, uri=video_uri)
+        )
+        job_config.config.inputs.append(
+            transcoder_v1.types.Input(key=audio_input_key, uri=audio_uri)
         )
 
+        # Define edit list for concatenation, referencing both video and audio inputs
         job_config.config.edit_list.append(
             transcoder_v1.types.EditAtom(
-                key=f"atom_part{i}",
-                inputs=[f"video_input_{i}"], # Reference the input with its generated key
-                # For concatenation, start_time_offset and end_time_offset should typically be 0
-                # to include the entire clip. If you need to trim, adjust these.
-                # For simplicity, we assume full clip concatenation.
-                # start_time_offset="0s", # Start from beginning of input
-                # end_time_offset="0s"    # End at the end of input (0s implies full duration)
+                key=f"atom_part_{i}",
+                inputs=[video_input_key, audio_input_key],
             )
         )
 
     # Define elementary streams (encoding settings for video and audio tracks).
+    # Video stream (assuming m4p implies standard MP4 video, using H264)
     job_config.config.elementary_streams.append(
         transcoder_v1.types.ElementaryStream(
             key="output_video_stream",
@@ -110,23 +124,22 @@ async def video_join_tool(
             ),
         )
     )
-    # --- IF YOU NEED AUDIO, UNCOMMENT AND CONFIGURE THIS SECTION ---
-    # job_config.config.elementary_streams.append(
-    #     transcoder_v1.types.ElementaryStream(
-    #         key="output_audio_stream",
-    #         audio_stream=transcoder_v1.types.AudioStream(
-    #             codec="aac", # Common audio codec
-    #             bitrate_bps=128000, # Example: 128 kbps
-    #         ),
-    #     )
-    # )
-    # -------------------------------------------------------------
+
+    # Audio stream (Linear16 corresponds to PCM_S16)
+    job_config.config.elementary_streams.append(
+        transcoder_v1.types.ElementaryStream(
+            key="output_audio_stream",
+            audio_stream=transcoder_v1.types.AudioStream(
+                codec="pcm_s16be", # Linear16 is typically PCM_S16 Big Endian
+                bitrate_bps=256000, # Example: 256 kbps for high quality linear PCM
+                sample_rate_hertz=48000, # Example: 48 kHz
+                channels=2, # Example: Stereo
+            ),
+        )
+    )
 
     # Define mux streams (how elementary streams are combined into output containers).
-    mux_elementary_streams = ["output_video_stream"]#, "output_audio_stream"] # Include audio if uncommented above
-    # --- IF YOU DID NOT UNCOMMENT THE AUDIO STREAM ABOVE, REMOVE "output_audio_stream" from the list above ---
-    # Example if only video: mux_elementary_streams = ["output_video_stream"]
-    # -------------------------------------------------------------
+    mux_elementary_streams = ["output_video_stream", "output_audio_stream"]
 
     job_config.config.mux_streams.append(
         transcoder_v1.types.MuxStream(
@@ -138,10 +151,9 @@ async def video_join_tool(
     )
 
     # Set job retention policy to a default of 1 day after completion
-    job_config.ttl_after_completion_days = 1 # Default to 1 day
+    job_config.ttl_after_completion_days = 1
 
-    #print(f"Creating Transcoder job for concatenation with config: {job_config}")
-    job_name = None # Initialize job_name
+    job_name = None
     try:
         # Asynchronously send the job creation request
         create_job_response = await client.create_job(parent=parent, job=job_config)
@@ -153,7 +165,7 @@ async def video_join_tool(
             await asyncio.sleep(15) # Polling interval (e.g., 15 seconds)
             print(f"Polling status for job {job_name}...")
             response = await client.get_job(name=job_name)
-            current_state_name = Job.ProcessingState(response.state).name # Get enum name
+            current_state_name = Job.ProcessingState(response.state).name
             print(f"Job status: {current_state_name}")
 
             if response.state == Job.ProcessingState.SUCCEEDED:
@@ -173,33 +185,19 @@ async def video_join_tool(
 
             elif response.state == Job.ProcessingState.PENDING:
                  print(f"Transcoder job '{job_name}' is PENDING. Waiting...")
-                 # Continue polling
 
             elif response.state == Job.ProcessingState.RUNNING:
                  progress = getattr(response, 'progress', None)
                  progress_percent_str = "N/A"
-                 if progress and hasattr(progress, 'analyzed') and hasattr(progress, 'encoded') and hasattr(progress, 'uploaded') and hasattr(progress, 'notified'):
-                     # A more detailed progress might be available depending on the job type
-                     # For simple concatenation, 'processed' might not be directly populated
-                     # We can estimate based on other flags or just indicate it's running.
-                     # The 'progress' object structure can vary.
-                     # Example: progress_percent_str = f"Analyzed: {progress.analyzed}, Encoded: {progress.encoded}"
-                     pass # Keep it simple for now
-                 elif progress and hasattr(progress, 'processed') and progress.processed is not None:
+                 if progress and hasattr(progress, 'processed') and progress.processed is not None:
                      progress_percent_str = f"{progress.processed:.1%}"
-
                  print(f"Transcoder job '{job_name}' is RUNNING. Progress: {progress_percent_str}. Waiting...")
-                 # Continue polling
-            
+
             elif response.state == Job.ProcessingState.UNSPECIFIED:
                 print(f"Transcoder job '{job_name}' is in an UNSPECIFIED state. Waiting...")
-                # Continue polling, but this might indicate an issue if it persists.
 
             else:
-                # This case should ideally not be reached if all defined states are handled.
                 print(f"Transcoder job '{job_name}' is in an unexpected state: {current_state_name}. Waiting...")
-                # Continue polling
-
 
     except GoogleAPIError as e:
         print(f"Google Cloud API Error occurred for job '{job_name or 'creation'}': {e}")

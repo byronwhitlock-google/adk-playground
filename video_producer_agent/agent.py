@@ -16,7 +16,8 @@ from video_generation_agent.agent import video_generation_agent, video_generatio
 from typing import Sequence, Dict, Any
 
 
-from video_producer_agent.tools import gcs_uri_to_public_url, generate_final_video_gcs_uri
+from video_producer_agent.text_to_speech import synthesize_text_to_gcs_sync
+from video_producer_agent.tools import gcs_uri_to_public_url
 from video_producer_agent.video_join_tool import video_join_tool
 
 
@@ -46,18 +47,16 @@ root_agent = Agent(
       Cinematic close-up shot of a sad woman riding a bus in the rain, cool blue tones, sad mood.
     
     -------
-    Send the video generation  a scene by scene breakdown of each scene.
-    The video generation  will then generate  video clips for each scene.
-    
-    Concatenate the generated clips together to create the final output video with a unique uri.
-     create the uniue uri for the final output video using the generate_final_video_gcs_uri tool.
-     pass the resulting uri to the video join tool to concatenate the video clips together.
+
+    You will generate narration for the video clips using the text to speech tool.
+    Mux them together with the join tool to create the final video.
+
 
 
     Convert the GCS URI of the video to a public URL and show the user inline in the browser.
 
-   always pass gs://byron-alpha-vpagent bucket to the video generation .
-   videos will be stored in this bucket
+   always use the gs://byron-alpha-vpagent bucket to the video generation .
+   audio and videos will be stored in this bucket
 
   """,
     tools=[
@@ -65,7 +64,7 @@ root_agent = Agent(
         gcs_uri_to_public_url,
         video_join_tool,
         video_generation_tool,
-        
+        synthesize_text_to_gcs_sync,
         
     ]
 )
