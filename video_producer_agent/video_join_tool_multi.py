@@ -1,4 +1,5 @@
 
+import time
 from google.cloud.video import transcoder_v1
 from google.cloud.video.transcoder_v1.types import Job
 from google.api_core.exceptions import GoogleAPIError
@@ -27,20 +28,18 @@ async def video_join_tool(
                                 (e.g., ["gs://your-bucket/file1.mp4", "gs://your-bucket/file2.mp4"]).
         output_uri_prefix (str): GCS URI prefix for the output directory
                                  (e.g., "gs://your-output-bucket/output-folder/").
-                                 The Transcoder API will append the output_filename to this prefix.
-        output_filename (str): The name of the final joined MP4 file (e.g., "joined_video.mp4").
+                                 The Transcoder API will append generate the output_filename to this prefix.
 
     Returns:
         str: The GCS URI of the successfully joined MP4 file.
 
     Raises:
-        ValueError: If the input_uris list is empty, output_filename is empty, or if project ID cannot be inferred.
+        ValueError: If the input_uris list is empty,  or if project ID cannot be inferred.
         Exception: If the Transcoder job fails or encounters an error.
     """
     if not input_uris:
         raise ValueError("The 'input_uris' list cannot be empty. Please provide at least one input URI.")
-    if not output_filename:
-        raise ValueError("The 'output_filename' cannot be empty.")
+
     if not location:
         raise ValueError("The 'location' argument cannot be empty.")
     if not output_uri_prefix:
@@ -131,7 +130,7 @@ async def video_join_tool(
             key="final_mp4_output",
             container="mp4",
             elementary_streams=mux_elementary_streams,
-            file_name=output_filename, # The actual filename within the output_uri_prefix folder
+            file_name= f"output_video_{int(time.time())}.mp4", # The actual filename within the output_uri_prefix folder
         )
     )
 

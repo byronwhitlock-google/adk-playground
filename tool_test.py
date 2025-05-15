@@ -5,34 +5,22 @@ import os
 import sys # Added to modify Python path
 from datetime import datetime
 
-# Adjust the Python path to include the 'video_generation_agent' directory
-# This allows us to import video_join_tool directly
-# Assuming tool_test.py is in the project root and video_join_tool.py is in ./video_generation_agent/
-project_root = os.path.dirname(os.path.abspath(__file__))
-video_agent_path = os.path.join(project_root, "video_generation_agent")
-if video_agent_path not in sys.path:
-    sys.path.insert(0, video_agent_path)
-
 from video_producer_agent.video_join_tool import video_join_tool
-from dotenv import load_dotenv
 
-load_dotenv()
+
+
 
 async def main():
     """
     Main function to test the video_join_tool.
     """
-    print("Starting video_join_tool test harness...")
-    print(f"Attempting to import 'video_join_tool' from: {video_agent_path}")
-
-
     # --- Configuration ---
     # These should be set in your .env file or environment.
     # If you use a .env file, ensure you have a library like python-dotenv to load it,
     # or that your execution environment (e.g., a shell script) loads it.
     # For example, with python-dotenv, you'd add:
-    # from dotenv import load_dotenv
-    # load_dotenv(os.path.join(project_root, ".env")) # Load .env from project root
+    from dotenv import load_dotenv
+    load_dotenv() # Load .env from project root
 
     # Get current datetime to include in the filename
     now = datetime.now()
@@ -43,19 +31,17 @@ async def main():
 
     # GCS URIs (as provided by you)
     test_input_uris = [
-        "gs://byron-alpha-vpagent/butterfly.mp4/682121198586463595/sample_0.mp4",
-        "gs://byron-alpha-vpagent/12786537024005683176/sample_0.mp4",
-        "gs://byron-alpha-vpagent/15139875958009000989/sample_0.mp4",
+        "gs://byron-alpha-vpagent/muxed_audio_output/muxed_output_1747264766.mp4",
+        #"gs://byron-alpha-vpagent/10717361122161337346/sample_0.mp4", # no audio
+        "gs://byron-alpha-vpagent/muxed_audio_output/muxed_output_1747264931.mp4",
     ]
     # IMPORTANT: Replace 'your-output-bucket-name' with your actual output bucket GCS URI
     test_output_uri_prefix = "gs://byron-alpha-vpagent/TESTjoined_videos_output/"
-    test_output_filename = f"joined_video_{datetime_string}.mp4"
 
     print(f"Using Project ID: {os.getenv('GOOGLE_CLOUD_PROJECT')}") # Loaded from .env or environment
     print(f"Using Location: {test_location}")
     print(f"Input URIs: {test_input_uris}")
     print(f"Output URI Prefix: {test_output_uri_prefix}")
-    print(f"Output Filename: {test_output_filename}")
 
     # --- Pre-checks (Optional but Recommended) ---
     if "your-output-bucket-name" in test_output_uri_prefix:
@@ -75,8 +61,7 @@ async def main():
         result_uri = await video_join_tool(
             location=test_location,
             input_uris=test_input_uris,
-            output_uri_prefix=test_output_uri_prefix,
-            output_filename=test_output_filename
+            output_uri_prefix=test_output_uri_prefix
         )
         print(f"\nVideo join tool completed successfully!")
         print(f"Output GCS URI: {result_uri}")

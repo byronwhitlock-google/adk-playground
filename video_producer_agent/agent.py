@@ -16,9 +16,43 @@ from video_generation_agent.agent import video_generation_agent, video_generatio
 from typing import Sequence, Dict, Any
 
 
+from video_producer_agent.mux_audio import get_linear16_audio_duration_gcs, mux_audio
 from video_producer_agent.text_to_speech import synthesize_text_to_gcs_sync
 from video_producer_agent.tools import gcs_uri_to_public_url
 from video_producer_agent.video_join_tool import video_join_tool
+
+#wrapper function
+def text_to_speech(
+    text: str,
+    voice_category:str,
+    speaking_rate:float
+) -> str:
+    """
+    Synchronously synthesizes text to MP3 in GCS, requiring all params explicitly.
+
+    Uses the synchronous Google Cloud Text-to-Speech client and handles long audio
+    requests, blocking until the operation completes or times out.
+
+    Args:
+        text: SSML to synthesize. Must include <speak> tag. may include <voice> tags.        
+        voice_category: one of male_high, female_high, male_low, female_low specifying the voice.
+        speaking_rate: Speed of speech (e.g., 1.0 for normal).
+
+
+    Returns:
+    """
+    return synthesize_text_to_gcs_sync(
+        text=text,
+        gcs_bucket_name="byron-alpha-vpagent",
+        voice_category=voice_category,
+        speaking_rate=speaking_rate,
+        pitch=0.0,
+        volume_gain_db=0.0,
+        timeout_seconds=300.0,
+        is_ssml=True,
+        GOOGLE_CLOUD_PROJECT="byron-alpha",
+        GOOGLE_CLOUD_LOCATION="us-central1"
+    )
 
 
 
@@ -29,11 +63,29 @@ root_agent = Agent(
   You are an expert Commercial director, cinematographer and Producer AI Agent. Your primary function is to
   translate unstructured user thoughts and ideas for a TV commercial into a
   structured technical blueprint for production. You will analyze the user's
-  creative brief and generate a detailed breakdown including scenes, narration, and punchy text overlays. 
-  You will also generate a shot list for each scene, including camera angles, lighting, and other technical details.
-  You will then pass this information to the video generation  to create the video clips.
-  !IMPORTANT: only generate 2 scenes TOTAL.
-   example video generation prompts:
+  creative brief and generate a detailed scene by scene breakdown. 
+
+    A good commercial effectively blends creativity, emotion, and storytelling with a clear representation of the brand's identity to capture the audience's attention and leave a lasting impression. It also includes a call to action and focuses on what the audience should do after seeing the commercial. 
+
+  each scene should be 8 seconds long and include the following the vide generation prompt, the narration input for the text to speech tool, and the text overlays.
+  
+  Change up the voices for scenes
+
+  first use the narration to generate the audio stream for each scene using the text to speech tool. check the length with the get_linear16_audio_duration_gcs tool.
+  the narration prompt should always end <break time="1s"/> tag to ensure the audio not cut off.
+  
+  If the audio is shorter than 8 seconds, regenerate with a longer <break time="0.5s"/> to pad silence at the end of the text to speech audio stream. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>.
+
+  if audio is longer than 10 seconds, first regenerate with a faster speaking rate up to 2.0. then try a shorter prompt. Only try 3 times before giving up.
+  
+  
+  Mux each scenes audio stream and video stream together using the mux audio tool.
+  The final commercial, join the video clips using the video join tool and convert the GCS URI of the video to a public URL.
+
+  show a plan of the video generation and audio generation process, and ask the user for confirmation before starting.
+  give a public URL to the video of each scene and the final video.
+
+     example video generation prompts:
       A video with smooth motion that dollies in on a desperate man in a green trench coat, using a vintage rotary phone against a wall bathed in an eerie green neon glow. The camera starts from a medium distance, slowly moving closer to the man's face, revealing his frantic expression and the sweat on his brow as he urgently dials the phone. The focus is on the man's hands, his fingers fumbling with the dial as he desperately tries to connect. The green neon light casts long shadows on the wall, adding to the tense atmosphere. The scene is framed to emphasize the isolation and desperation of the man, highlighting the stark contrast between the vibrant glow of the neon and the man's grim determination.
 
       Create a short 3D animated scene in a joyful cartoon style. A cute creature with snow leopard-like fur, large expressive eyes, and a friendly, rounded form happily prances through a whimsical winter forest. The scene should feature rounded, snow-covered trees, gentle falling snowflakes, and warm sunlight filtering through the branches. The creature's bouncy movements and wide smile should convey pure delight. Aim for an upbeat, heartwarming tone with bright, cheerful colors and playful animation.
@@ -47,24 +99,18 @@ root_agent = Agent(
       Cinematic close-up shot of a sad woman riding a bus in the rain, cool blue tones, sad mood.
     
     -------
-
-    You will generate narration for the video clips using the text to speech tool.
-    Mux them together with the join tool to create the final video.
-
-
-
-    Convert the GCS URI of the video to a public URL and show the user inline in the browser.
-
-   always use the gs://byron-alpha-vpagent bucket to the video generation .
-   audio and videos will be stored in this bucket
-
+    always use the gs://byron-alpha-vpagent bucket to the video generation .
+    audio and videos will always be stored in this bucket
+    generate the commercial one scene at a time.
   """,
     tools=[
         #AgentTool(agent=video_generation_agent),
         gcs_uri_to_public_url,
         video_join_tool,
         video_generation_tool,
-        synthesize_text_to_gcs_sync,
+        text_to_speech,
+        mux_audio,
+        get_linear16_audio_duration_gcs
         
     ]
 )

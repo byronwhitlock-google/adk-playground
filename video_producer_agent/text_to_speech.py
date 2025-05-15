@@ -16,6 +16,9 @@ VOICE_CATEGORY_DEFAULTS = {
     "male_low": {"language_code": "en-US", "name": "en-US-Standard-D", "ssml_gender": SsmlVoiceGender.MALE},
     "female_low": {"language_code": "en-US", "name": "en-US-Standard-F", "ssml_gender": SsmlVoiceGender.FEMALE},
 }
+#TODO: FIgure out how to not hard code these values!!
+
+
 
 # --- Core Synchronous Synthesis Function (NO Default Parameters) ---
 def synthesize_text_to_gcs_sync(
@@ -26,7 +29,7 @@ def synthesize_text_to_gcs_sync(
     speaking_rate: float,
     pitch: float,
     volume_gain_db: float,
-    effects_profile_id: list[str] | None, # Type hint allows None, but must be passed
+    #effects_profile_id: list[str] | None, # Type hint allows None, but must be passed
     timeout_seconds: float,
     is_ssml: bool,
     GOOGLE_CLOUD_PROJECT: str,
@@ -41,11 +44,10 @@ def synthesize_text_to_gcs_sync(
     Args:
         text: The text (or SSML string) to synthesize.
         gcs_bucket_name: The name of the GCS bucket to store the output MP3.
-        voice_category: A key from VOICE_CATEGORY_DEFAULTS specifying the voice.
+        voice_category: One of male_high, female_high, male_low, female_low specifying the voice.
         speaking_rate: Speed of speech (e.g., 1.0 for normal).
         pitch: Pitch adjustment (e.g., 0.0 for normal).
         volume_gain_db: Volume gain adjustment (e.g., 0.0 for normal).
-        effects_profile_id: List of audio effects profile IDs or None.
         timeout_seconds: Max seconds to wait for the synthesis operation to complete.
         is_ssml: True if 'text' contains SSML markup, False if plain text.
 
@@ -88,7 +90,8 @@ def synthesize_text_to_gcs_sync(
         speaking_rate=speaking_rate,
         pitch=pitch,
         volume_gain_db=volume_gain_db,
-        effects_profile_id=effects_profile_id if effects_profile_id else [],
+        #effects_profile_id=effects_profile_id if effects_profile_id else
+        effects_profile_id=[],
     )
 
     # 3. Define output location and create request
