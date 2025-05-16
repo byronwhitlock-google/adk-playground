@@ -35,20 +35,10 @@ async def main():
         #"gs://byron-alpha-vpagent/10717361122161337346/sample_0.mp4", # no audio
         "gs://byron-alpha-vpagent/muxed_audio_output/muxed_output_1747264931.mp4",
     ]
-    # IMPORTANT: Replace 'your-output-bucket-name' with your actual output bucket GCS URI
-    test_output_uri_prefix = "gs://byron-alpha-vpagent/TESTjoined_videos_output/"
 
     print(f"Using Project ID: {os.getenv('GOOGLE_CLOUD_PROJECT')}") # Loaded from .env or environment
     print(f"Using Location: {test_location}")
     print(f"Input URIs: {test_input_uris}")
-    print(f"Output URI Prefix: {test_output_uri_prefix}")
-
-    # --- Pre-checks (Optional but Recommended) ---
-    if "your-output-bucket-name" in test_output_uri_prefix:
-        print("\nWARNING: Placeholder GCS output URI prefix is being used.")
-        print(f"Please replace 'your-output-bucket-name' in '{test_output_uri_prefix}' with an actual GCS bucket name.")
-        print("The tool will likely fail if this is not an actual accessible GCS path.\n")
-        # return # You might want to exit if placeholders are detected
 
     if not os.getenv("GOOGLE_CLOUD_PROJECT"):
         print("Error: GOOGLE_CLOUD_PROJECT environment variable is not set.")
@@ -61,7 +51,6 @@ async def main():
         result_uri = await video_join_tool(
             location=test_location,
             input_uris=test_input_uris,
-            output_uri_prefix=test_output_uri_prefix
         )
         print(f"\nVideo join tool completed successfully!")
         print(f"Output GCS URI: {result_uri}")

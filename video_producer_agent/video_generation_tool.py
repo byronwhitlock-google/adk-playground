@@ -14,7 +14,6 @@ import vertexai
 import random
 import time
 
-
 async def video_generation_tool(
     prompt: str,
     generateVideoConfig: types.GenerateVideosConfig,

@@ -1,5 +1,6 @@
 import time
 from urllib.parse import urlparse
+import uuid
 from google.cloud.video import transcoder_v1
 from google.cloud.video.transcoder_v1.types import Job # Corrected import for MediaAnalysis
 from google.api_core.exceptions import GoogleAPIError
@@ -16,6 +17,9 @@ import base64 # Required for base64 encoding the mediaAnalysis ID
 
 import os
 from google.cloud import storage
+
+
+
 
 def get_linear16_audio_duration_gcs(
     audio_uri: str,
@@ -80,7 +84,6 @@ async def mux_audio(
     video_uri: str,
     audio_uri: str,
     end_time_offset: float,
-    output_uri_base: str,
     location: str,
 ) -> str:
     """
@@ -92,8 +95,6 @@ async def mux_audio(
         video_uri (str): The GCS URI of the video file (e.g., "gs://your-bucket/video.mp4").
         audio_uri (str): The GCS URI of the audio file (e.g., "gs://your-bucket/audio.pcm").
         end_time_offset (float): The end time offset for the muxed output in seconds (must be the minimum of video and audio durations).
-        output_uri_base (str): GCS URI prefix for the output directory
-                                  (e.g., "gs://your-output-bucket/output-folder/").
         location (str): The GCP region for the Transcoder job. Examples: "us-central1",
                         "us-east1", "europe-west1", "asia-southeast1".
                         
@@ -104,6 +105,10 @@ async def mux_audio(
         ValueError: If required URIs are not provided or are invalid, or if project ID cannot be inferred.
         Exception: If the Transcoder job fails or encounters an error.
     """
+    
+    # hard code bucket
+    # TODO: parmaterize this outside the LLM 
+    output_uri_base="gs://byron-alpha-vpagent/muxed_audio_output/"
 
     if not video_uri or not audio_uri:
         raise ValueError("Both 'video_uri' and 'audio_uri' must be provided.")
@@ -111,8 +116,6 @@ async def mux_audio(
         raise ValueError(f"Invalid GCS video URI: {video_uri}. Input URIs must start with 'gs://'.")
     if not audio_uri.startswith("gs://"):
         raise ValueError(f"Invalid GCS audio URI: {audio_uri}. Input URIs must start with 'gs://'.")
-    if not output_uri_base:
-        raise ValueError("The 'output_uri_base' argument cannot be empty.")
     if not location:
         raise ValueError("The 'location' argument cannot be empty.")
     
@@ -132,7 +135,7 @@ async def mux_audio(
         output_uri_base += '/'
     
     # Generate a unique output filename for the muxed file
-    output_filename = f"muxed_output_{int(time.time())}.mp4"
+    output_filename = uuid.uuid4().hex + ".mp4"
     final_output_uri = f"{output_uri_base}{output_filename}"
 
     # Use the async client

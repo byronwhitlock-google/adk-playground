@@ -30,7 +30,7 @@ Receive a scene description from the Producer Agent.
 
 Create a shot list of each scene in the script.
 
-Translate those descriptions into detailed Veo2 prompts for each scene. 
+Translate those descriptions into detailed Veo2 prompts for each clip. 
 Use the veo2 video_generation_tool to generate a clip.
 
 Generate high-quality video clips that match the creative brief.

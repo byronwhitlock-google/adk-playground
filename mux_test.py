@@ -42,7 +42,6 @@ async def run_mux_audio_test():
     print(f"Using Location: {location}")
     print(f"Input Video URI: {test_video_uri}")
     print(f"Input Audio URI: {test_audio_uri}")
-    print(f"Output URI Base: {test_output_uri_base}")
 
     # --- Execute the Tool ---
     try:
@@ -51,7 +50,6 @@ async def run_mux_audio_test():
             video_uri=test_video_uri,
             audio_uri=test_audio_uri,
             end_time_offset=2,
-            output_uri_base=test_output_uri_base,
             location=location,
         )
         print("\n--- Mux Audio Tool Execution Completed Successfully! ---")

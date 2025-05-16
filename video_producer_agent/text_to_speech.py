@@ -20,6 +20,39 @@ VOICE_CATEGORY_DEFAULTS = {
 
 
 
+#wrapper function
+def text_to_speech(
+    text: str,
+    voice_category:str,
+    speaking_rate:float
+) -> str:
+    """
+    Synchronously synthesizes text to MP3 in GCS, requiring all params explicitly.
+
+    Uses the synchronous Google Cloud Text-to-Speech client and handles long audio
+    requests, blocking until the operation completes or times out.
+
+    Args:
+        text: SSML to synthesize. Must include <speak> tag. may include <voice> tags.        
+        voice_category: one of male_high, female_high, male_low, female_low specifying the voice.
+        speaking_rate: Speed of speech (e.g., 1.0 for normal).
+
+
+    Returns:
+    """
+    return synthesize_text_to_gcs_sync(
+        text=text,
+        gcs_bucket_name="byron-alpha-vpagent",
+        voice_category=voice_category,
+        speaking_rate=speaking_rate,
+        pitch=0.0,
+        volume_gain_db=0.0,
+        timeout_seconds=300.0,
+        is_ssml=True,
+        GOOGLE_CLOUD_PROJECT="byron-alpha", #TODO: parameterize
+        GOOGLE_CLOUD_LOCATION="us-central1"
+    )
+
 # --- Core Synchronous Synthesis Function (NO Default Parameters) ---
 def synthesize_text_to_gcs_sync(
     # Required parameters (no defaults):

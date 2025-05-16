@@ -17,44 +17,13 @@ from typing import Sequence, Dict, Any
 
 
 from video_producer_agent.mux_audio import get_linear16_audio_duration_gcs, mux_audio
-from video_producer_agent.text_to_speech import synthesize_text_to_gcs_sync
+from video_producer_agent.text_to_speech import synthesize_text_to_gcs_sync, text_to_speech
 from video_producer_agent.tools import gcs_uri_to_public_url
 from video_producer_agent.video_join_tool import video_join_tool
 
-#wrapper function
-def text_to_speech(
-    text: str,
-    voice_category:str,
-    speaking_rate:float
-) -> str:
-    """
-    Synchronously synthesizes text to MP3 in GCS, requiring all params explicitly.
 
-    Uses the synchronous Google Cloud Text-to-Speech client and handles long audio
-    requests, blocking until the operation completes or times out.
-
-    Args:
-        text: SSML to synthesize. Must include <speak> tag. may include <voice> tags.        
-        voice_category: one of male_high, female_high, male_low, female_low specifying the voice.
-        speaking_rate: Speed of speech (e.g., 1.0 for normal).
-
-
-    Returns:
-    """
-    return synthesize_text_to_gcs_sync(
-        text=text,
-        gcs_bucket_name="byron-alpha-vpagent",
-        voice_category=voice_category,
-        speaking_rate=speaking_rate,
-        pitch=0.0,
-        volume_gain_db=0.0,
-        timeout_seconds=300.0,
-        is_ssml=True,
-        GOOGLE_CLOUD_PROJECT="byron-alpha",
-        GOOGLE_CLOUD_LOCATION="us-central1"
-    )
-
-
+# we cam add this into the prompt to padd the audio. otherwise, the video gets truncated 1 second afer the audio is done.
+padding_prompt= 'If the audio is shorter than 8 seconds, regenerate with a longer <break time="0.5s"/> to pad silence at the end of the text to speech audio stream. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>.'
 
 root_agent = Agent(
     name="video_producer_agent",
@@ -67,14 +36,14 @@ root_agent = Agent(
 
     A good commercial effectively blends creativity, emotion, and storytelling with a clear representation of the brand's identity to capture the audience's attention and leave a lasting impression. It also includes a call to action and focuses on what the audience should do after seeing the commercial. 
 
-  each scene should be 8 seconds long and include the following the vide generation prompt, the narration input for the text to speech tool, and the text overlays.
+  each scene should be 8 seconds long and include  the video generation prompt, the narration input for the text to speech tool, and the text overlays.
   
-  Change up the voices for scenes
+  Change up the voices and speed of speech for different scenes to keep it interesting.
 
   first use the narration to generate the audio stream for each scene using the text to speech tool. check the length with the get_linear16_audio_duration_gcs tool.
-  the narration prompt should always end <break time="1s"/> tag to ensure the audio not cut off.
+  the narration prompt should ALWAYS end with <break time="1s"/> tag to ensure the audio not cut off.
   
-  If the audio is shorter than 8 seconds, regenerate with a longer <break time="0.5s"/> to pad silence at the end of the text to speech audio stream. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>.
+  Pad dramatic pauses. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>
 
   if audio is longer than 10 seconds, first regenerate with a faster speaking rate up to 2.0. then try a shorter prompt. Only try 3 times before giving up.
   

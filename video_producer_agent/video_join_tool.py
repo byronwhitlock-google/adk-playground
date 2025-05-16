@@ -1,4 +1,5 @@
 import time
+import uuid
 from google.cloud.video import transcoder_v1
 from google.cloud.video.transcoder_v1.types import Job
 from google.api_core.exceptions import GoogleAPIError
@@ -7,10 +8,10 @@ from typing import List
 import google.auth # Import google.auth to infer project ID
 import traceback # Import traceback for better error logging
 
+
 async def video_join_tool(
     location: str,
-    input_uris: List[str],
-    output_uri_prefix: str,
+    input_uris: List[str]
 ) -> str:
     """
     Asynchronously joins a list of MP4 files in GCS using the Transcoder API and
@@ -24,11 +25,7 @@ async def video_join_tool(
                         This cannot be inferred as Transcoder is a regional service.
         input_uris (List[str]): A list of GCS URIs of the input MP4 files
                                 (e.g., ["gs://your-bucket/file1.mp4", "gs://your-bucket/file2.mp4"]).
-        output_uri_prefix (str): GCS URI prefix for the output directory
-                                 (e.g., "gs://your-output-bucket/output-folder/").
-                                 The Transcoder API will generate a output_filename to this prefix.
         
-
     Returns:
         str: The GCS URI of the successfully joined MP4 file.
 
@@ -41,10 +38,7 @@ async def video_join_tool(
 
     if not location:
         raise ValueError("The 'location' argument cannot be empty.")
-    if not output_uri_prefix:
-        raise ValueError("The 'output_uri_prefix' argument cannot be empty.")
-
-    # Infer the project ID from the environment
+      # Infer the project ID from the environment
     try:
         credentials, project_id = google.auth.default()
         if not project_id:
@@ -55,11 +49,17 @@ async def video_join_tool(
     except Exception as e:
         raise ValueError(f"Failed to infer Google Cloud Project ID: {e}")
 
+    # hard code bucket
+    # TODO: parmaterize this outside the LLM 
+    output_uri_prefix="gs://byron-alpha-vpagent/commercials/"
+
+
     # Ensure output_uri_prefix ends with a slash for proper GCS path construction
     if not output_uri_prefix.endswith('/'):
         output_uri_prefix += '/'
     
-    output_filename = f"joined_video_{time.strftime('%Y%m%d-%H%M%S')}.mp4"
+    output_filename = uuid.uuid4().hex + ".mp4"
+
 
     # Use the async client
     client = transcoder_v1.TranscoderServiceAsyncClient()
