@@ -17,18 +17,14 @@ from typing import Sequence, Dict, Any
 
 
 from video_producer_agent.mux_audio import get_linear16_audio_duration_gcs, mux_audio
-from video_producer_agent.text_to_speech import synthesize_text_to_gcs_sync, text_to_speech
+from video_producer_agent.chirp_audio import  text_to_speech
 from video_producer_agent.tools import gcs_uri_to_public_url
 from video_producer_agent.video_join_tool import video_join_tool
 
 
 # we cam add this into the prompt to padd the audio. otherwise, the video gets truncated 1 second afer the audio is done.
-padding_prompt= 'If the audio is shorter than 8 seconds, regenerate with a longer <break time="0.5s"/> to pad silence at the end of the text to speech audio stream. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>.'
-
-root_agent = Agent(
-    name="video_producer_agent",
-    model="gemini-2.0-flash",  #  Make sure this is the correct model identifier
-    instruction="""
+padding_prompt= 'If the audio is shorter than 8 seconds, regenerate with a longer <break time="0.5s"/> to pad silence at the end of the text to speech audio stream. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>.  the narration prompt should ALWAYS end with <break time="1s"/> tag to ensure the audio not cut off.  Pad dramatic pauses. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>'
+prompt="""
   You are an expert Commercial director, cinematographer and Producer AI Agent. Your primary function is to
   translate unstructured user thoughts and ideas for a TV commercial into a
   structured technical blueprint for production. You will analyze the user's
@@ -41,9 +37,7 @@ root_agent = Agent(
   Change up the voices and speed of speech for different scenes to keep it interesting.
 
   first use the narration to generate the audio stream for each scene using the text to speech tool. check the length with the get_linear16_audio_duration_gcs tool.
-  the narration prompt should ALWAYS end with <break time="1s"/> tag to ensure the audio not cut off.
-  
-  Pad dramatic pauses. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>
+
 
   if audio is longer than 10 seconds, first regenerate with a faster speaking rate up to 2.0. then try a shorter prompt. Only try 3 times before giving up.
   
@@ -71,7 +65,11 @@ root_agent = Agent(
     always use the gs://byron-alpha-vpagent bucket to the video generation .
     audio and videos will always be stored in this bucket
     generate the commercial one scene at a time.
-  """,
+  """
+root_agent = Agent(
+    name="video_producer_agent",
+    model="gemini-2.0-flash",  #  Make sure this is the correct model identifier
+    instruction=prompt,
     tools=[
         #AgentTool(agent=video_generation_agent),
         gcs_uri_to_public_url,
