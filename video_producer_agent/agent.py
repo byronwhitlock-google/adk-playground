@@ -10,16 +10,14 @@ from google import genai
 from google.genai import types
 from vertexai.preview.generative_models import GenerativeModel
 import vertexai
-from video_generation_agent.agent import video_generation_agent, video_generation_tool
-
-
 from typing import Sequence, Dict, Any
 
 
-from video_producer_agent.mux_audio import get_linear16_audio_duration_gcs, mux_audio
-from video_producer_agent.chirp_audio import  text_to_speech
-from video_producer_agent.tools import gcs_uri_to_public_url
-from video_producer_agent.video_join_tool import video_join_tool
+from .mux_audio import get_linear16_audio_duration_gcs, mux_audio
+from .chirp_audio import  text_to_speech
+from .tools import gcs_uri_to_public_url
+from .video_join_tool import video_join_tool
+from .video_generation_tool import video_generation_tool
 
 
 # we cam add this into the prompt to padd the audio. otherwise, the video gets truncated 1 second afer the audio is done.
@@ -36,17 +34,20 @@ prompt="""
   
   Change up the voices and speed of speech for different scenes to keep it interesting.
 
-  first use the narration to generate the audio stream for each scene using the text to speech tool. check the length with the get_linear16_audio_duration_gcs tool.
-
+  first generate the audio  for each scene using the text to speech tool. check the length with the get_linear16_audio_duration_gcs tool. then generate video with a length longer than the audio. Never truncate more than 1 second of audio.
 
   if audio is longer than 10 seconds, first regenerate with a faster speaking rate up to 2.0. then try a shorter prompt. Only try 3 times before giving up.
   
-  
+  never use personal pronouns when generating video
+    
   Mux each scenes audio stream and video stream together using the mux audio tool.
   The final commercial, join the video clips using the video join tool and convert the GCS URI of the video to a public URL.
 
-  show a plan of the video generation and audio generation process, and ask the user for confirmation before starting.
-  give a public URL to the video of each scene and the final video.
+  
+
+    
+    example audio promopts:
+
 
      example video generation prompts:
       A video with smooth motion that dollies in on a desperate man in a green trench coat, using a vintage rotary phone against a wall bathed in an eerie green neon glow. The camera starts from a medium distance, slowly moving closer to the man's face, revealing his frantic expression and the sweat on his brow as he urgently dials the phone. The focus is on the man's hands, his fingers fumbling with the dial as he desperately tries to connect. The green neon light casts long shadows on the wall, adding to the tense atmosphere. The scene is framed to emphasize the isolation and desperation of the man, highlighting the stark contrast between the vibrant glow of the neon and the man's grim determination.
@@ -60,11 +61,25 @@ prompt="""
       A close-up of a girl holding adorable golden retriever puppy in the park, sunlight.
       
       Cinematic close-up shot of a sad woman riding a bus in the rain, cool blue tones, sad mood.
+      -------
+      Key Techniques for Natural Speech
+      Punctuation for Pacing and Flow
+      Periods (.): Indicate a full stop and a longer pause. Use them to separate complete thoughts and create clear sentence boundaries.
+      Commas (,): Signal shorter pauses within sentences. Use them to separate clauses, list items, or introduce brief breaks for breath.
+      Ellipses (...): Represent a longer, more deliberate pause. They can indicate trailing thoughts, hesitation, or a dramatic pause.
+      Example: "And then... it happened."
+      Hyphens (-): Can be used to indicate a brief pause or a sudden break in thought.
+      Example: "I wanted to say - but I couldn't."
+      Strategic Pauses: Use ellipses, commas, or hyphens to create pauses in places where a human speaker would naturally pause for breath or emphasis.
+      Original Script (Robotic): "The product is now available. We have new features. It is very exciting."
+      Improved Script (Natural): "The product is now available... and we've added some exciting new features. It's, well, it's very exciting."
+      -----
     
-    -------
-    always use the gs://byron-alpha-vpagent bucket to the video generation .
-    audio and videos will always be stored in this bucket
     generate the commercial one scene at a time.
+    show a plan of the video generation and audio generation process, and ask the user for confirmation before starting. 
+  Show the audio prompt, video prompt, voice type and speed.
+
+  give a public URL to the video of each scene and the final video.
   """
 root_agent = Agent(
     name="video_producer_agent",
