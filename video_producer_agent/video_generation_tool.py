@@ -1,6 +1,6 @@
+import pprint
 from google.adk.agents import LlmAgent
 from google.adk.agents import Agent
-from google.adk.tools import ToolContext
 from google.adk.tools.agent_tool import AgentTool
 from google.cloud import aiplatform
 from google.adk.agents import LlmAgent
@@ -10,10 +10,11 @@ from google.genai import types
 
 from vertexai.preview.generative_models import GenerativeModel
 import vertexai
+from dotenv import load_dotenv
 
 import random
 import time
-
+import os
 from typing import Sequence, Dict, Any
 
 
@@ -26,36 +27,100 @@ from google.api_core import exceptions as google_api_exceptions
 
 async def video_generation_tool(
     prompt: str,
-    generateVideoConfig: types.GenerateVideosConfig,
-    tool_context: ToolContext
+    aspect_ratio: str,
+    duration_seconds: int ,
+    enhance_prompt: bool ,
+    negative_prompt: str ,
+    person_generation: str,
+    seed: int 
     ):
     """Tool to generate an 8 second video clip from an description using Veo2.
     
     Args:
         prompt (str): The prompt to be sent to the video generation tool
-        generateVideoConfig (types.GenerateVideosConfig): The configuration for the video generation tool.
-        tool_context (ToolContext): The tool context for storing artifacts
+        aspect_ratio The aspect ratio for the generated video. 16:9 and 9:16 are supported
+        duration_seconds (int): Desired duration of the generated video in seconds (max 8).
+        enhance_prompt (bool): Whether to enhance the prompt for better video generation.
+        negative_prompt (str): A prompt to guide the model away from generating certain content.
+        person_generation : valid values: dont_allow, allow_adult. Configuration for generating people in the video .
+        seed (int): A seed for reproducible video generation.
+
     Returns:
-        types.GenerateVideosResponse: The response from the video generation tool. 
+        str: gcs URI to the video. or string error message
     """
     try:
+
+        load_dotenv()   
+
+        gcs_bucket_name = os.getenv("GOOGLE_CLOUD_BUCKET", "byron-alpha-vpagent")
+
+        output_gcs_uri=f"gs://{gcs_bucket_name}/veo2/"+ uuid.uuid4().hex
+
+
         # Initialize the client for the Generative AI API
         client = genai.Client()
 
-        # Create an operation to generate a video
-        operation = client.models.generate_videos(
-            model="veo-2.0-generate-001",
-            prompt=prompt,
-            config=generateVideoConfig,
+        # Create the GenerateVideosConfig object
+        generate_video_config = types.GenerateVideosConfig(
+            aspect_ratio=aspect_ratio,
+            duration_seconds=duration_seconds,
+            enhance_prompt=enhance_prompt,
+            negative_prompt=negative_prompt,
+            number_of_videos=1,
+            output_gcs_uri=output_gcs_uri,
+            person_generation=person_generation,
+            seed=seed
         )
 
+        # Create an operation to generate a video
+        operation =  client.models.generate_videos(
+            model="veo-2.0-generate-001",
+            prompt=prompt,
+            config=generate_video_config,
+        )
         # Wait for video generation to complete
         while not operation.done:
-            time.sleep(20)
+            time.sleep(2)
             operation = client.operations.get(operation)
+        pprint.pprint(operation)
+        if operation.error:
+            return operation.error['message']
+        else:
+            return operation.response.generated_videos[0].video.uri
+        
+        # # Explicitly check the type of operation immediately after the call
+        # if not isinstance(operation, types.GenerateVideosOperation): # Assuming genai.Client returns types.Operation
+        #     return f"Error: Expected an operation object, but received: {type(operation).__name__} - {operation}"
 
-        
-        return operation.response.generated_videos
-        
+        # # Wait for video generation to complete
+        # while operation.done == None:
+        #     time.sleep(1) # Still sleep to wait for completion
+        #     if not hasattr(operation, 'name'):
+        #         return f"Error: Operation object missing 'name' attribute during status check. Type: {type(operation).__name__}"
+        #     pprint.pprint (operation)
+        #    # print ("tring this op "+op.name)
+        #     operation =   client.operations.get(operation.name) # Use operation.name to get the latest status
+
+        # # Check if the operation completed successfully and has a response
+        # if operation.done :
+        #     if operation.error:
+        #         # If there's an error in the operation, return the error message
+        #         return f"Video generation failed with error: {operation.error.message} (Code: {operation.error.code})"
+        #     elif operation.response:
+        #         # Check if 'generated_videos' attribute exists before accessing it
+        #         if hasattr(operation.response, 'generated_videos'):
+        #             return operation.response.generated_videos
+        #         else:
+        #             # If 'generated_videos' is not found, it means the response structure is unexpected
+        #             return "Error: 'generated_videos' attribute not found in the operation response."
+        #     else:
+        #         # If operation.response is None, but no error, indicate no response
+        #         return "Error: Video generation operation completed but returned no response."
+        # else:
+        #     # This case should ideally not be hit if the while loop exits because operation.done is true
+        #     return "Error: Video generation operation did not complete successfully."
+
     except Exception as e:
-        return f"Error generating video: {str(e)}"
+        # Catch any other general exceptions that might occur during the process
+        #return f"Error generating video: {str(e)}"
+        raise e
