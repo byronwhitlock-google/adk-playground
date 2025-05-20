@@ -39,7 +39,7 @@ async def video_generation_tool(
     Args:
         prompt (str): The prompt to be sent to the video generation tool
         aspect_ratio The aspect ratio for the generated video. 16:9 and 9:16 are supported
-        duration_seconds (int): Desired duration of the generated video in seconds (max 8).
+        duration_seconds (int): Desired duration of the generated video in seconds valid values are (5,6,7,8).
         enhance_prompt (bool): Whether to enhance the prompt for better video generation.
         negative_prompt (str): A prompt to guide the model away from generating certain content.
         person_generation : valid values: dont_allow, allow_adult. Configuration for generating people in the video .
