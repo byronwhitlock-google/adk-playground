@@ -16,33 +16,6 @@ import time
 
 from typing import Sequence, Dict, Any
 
-from video_producer_agent.video_join_tool import video_join_tool
-
-#  Load the instructions from the immersive.  In a real application, you might
-#  load this from a file or a database.  Here, we're including it directly
-#  for clarity and completeness.
-video_generation_agent_instructions = """
-Role: Generates the visual content for each scene of the commercial using Veo2.
-
-Key Responsibilities:
-
-Receive a scene description from the Producer Agent.
-
-Create a shot list of each scene in the script.
-
-Translate those descriptions into detailed Veo2 prompts for each clip. 
-Use the veo2 video_generation_tool to generate a clip.
-
-Generate high-quality video clips that match the creative brief.
-
-Ensure visual consistency across the commercial.
-always pass gs://byron-alpha-vpagent bucket to the video generation tool.
-videos will be stored in this bucket
-
-Retry any failed generation attempts up to 3 times, based on the error message. change the prompt slightly each time.
-
-
-  """
 
 import uuid
 from google.cloud.video import transcoder_v1
