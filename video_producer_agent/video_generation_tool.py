@@ -27,26 +27,15 @@ from google.api_core import exceptions as google_api_exceptions
 
 async def video_generation_tool(
     prompt: str,
-    aspect_ratio: str,
-    duration_seconds: int ,
-    enhance_prompt: bool ,
-    negative_prompt: str ,
-    person_generation: str,
-    seed: int 
+    duration_seconds: int 
     ):
     """Tool to generate an 8 second video clip from an description using Veo2.
     
     Args:
         prompt (str): The prompt to be sent to the video generation tool
-        aspect_ratio The aspect ratio for the generated video. 16:9 and 9:16 are supported
         duration_seconds (int): Desired duration of the generated video in seconds valid values are (5,6,7,8).
-        enhance_prompt (bool): Whether to enhance the prompt for better video generation.
-        negative_prompt (str): A prompt to guide the model away from generating certain content.
-        person_generation : valid values: dont_allow, allow_adult. Configuration for generating people in the video .
-        seed (int): A seed for reproducible video generation.
-
     Returns:
-        str: gcs URI to the video. or string error message
+        types.GenerateVideosResponse: The response from the video generation tool.
     """
     try:
 
@@ -62,14 +51,10 @@ async def video_generation_tool(
 
         # Create the GenerateVideosConfig object
         generate_video_config = types.GenerateVideosConfig(
-            aspect_ratio=aspect_ratio,
             duration_seconds=duration_seconds,
-            enhance_prompt=enhance_prompt,
-            negative_prompt=negative_prompt,
             number_of_videos=1,
             output_gcs_uri=output_gcs_uri,
-            person_generation=person_generation,
-            seed=seed
+            person_generation="allow_adult",
         )
 
         # Create an operation to generate a video
@@ -83,10 +68,9 @@ async def video_generation_tool(
             time.sleep(2)
             operation = client.operations.get(operation)
         pprint.pprint(operation)
-        if operation.error:
-            return operation.error['message']
-        else:
-            return operation.response.generated_videos[0].video.uri
+        
+        return operation.response
+        
         
         # # Explicitly check the type of operation immediately after the call
         # if not isinstance(operation, types.GenerateVideosOperation): # Assuming genai.Client returns types.Operation

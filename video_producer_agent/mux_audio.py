@@ -1,85 +1,110 @@
-import time
-from urllib.parse import urlparse
+
+
+
+
+
+
 import uuid
-from google.cloud.video import transcoder_v1
+import traceback # Import traceback for better error logging
+import time
+import tempfile
+import os
+import logging
+import google.auth # Import google.auth to infer project ID
+import base64 # Required for base64 encoding the mediaAnalysis ID
+import asyncio
+from urllib.parse import urlparse
+from typing import List, Dict
+from google.protobuf.duration_pb2 import Duration # Import Duration type for time offsets
 from google.cloud.video.transcoder_v1.types import Job # Corrected import for MediaAnalysis
+from google.cloud.video import transcoder_v1
+from google.cloud.exceptions import NotFound, GoogleCloudError
+from google.cloud import storage
 from google.api_core.exceptions import GoogleAPIError
 
+# Import the new library
+from tinytag import TinyTag
 
-
-
-import asyncio
-from typing import List, Dict
-import google.auth # Import google.auth to infer project ID
-import traceback # Import traceback for better error logging
-from google.protobuf.duration_pb2 import Duration # Import Duration type for time offsets
-import base64 # Required for base64 encoding the mediaAnalysis ID
-
-import os
-from google.cloud import storage
-
-
-
-
-def get_linear16_audio_duration_gcs(
+def get_mp3_audio_duration_gcs(
     audio_uri: str,
-) -> float:
+) -> str :
     """
-    Gets the duration of a LINEAR16 audio file stored in Google Cloud Storage.
-
-    LINEAR16 is 16-bit signed PCM, so bit_depth is implicitly 16.
+    Gets the duration of an MP3 audio file stored in Google Cloud Storage
+    using a pure Python library (tinytag), without relying on FFmpeg.
 
     Args:
-        bucket_name (str): The name of your GCS bucket.
-        blob_name (str): The path to the LINEAR16 audio file in the bucket
-                         (e.g., 'audio/my_linear16_recording.raw').
-        sample_rate (int): The sample rate of the audio (e.g., 16000 Hz, 44100 Hz).
-        num_channels (int): The number of audio channels (e.g., 1 for mono, 2 for stereo).
+        audio_uri (str): The GCS URI of the MP3 audio file (e.g., "gs://your-bucket/audio.mp3").
 
     Returns:
-        float: The duration of the audio in seconds.
+        str: The duration of the audio in seconds, or error message if an error occurs.
     """
-    #defaults from text to speech tool
-    sample_rate=22500
-    num_channels=1
-
     if not audio_uri.startswith("gs://"):
-        raise ValueError(f"Invalid GCS audio URI: {audio_uri}. Input URIs must start with 'gs://'.")
+        return(f"Error: Invalid GCS audio URI: {audio_uri}. Input URIs must start with 'gs://'.")
+         
+
     client = storage.Client()
     parsed_uri = urlparse(audio_uri)
     bucket_name = parsed_uri.netloc
     blob_name = parsed_uri.path.lstrip('/')
+    
     bucket = client.bucket(bucket_name)
     blob = bucket.blob(blob_name)
     
-
-    
-
-    # Create a temporary local file to download the GCS blob
-    temp_file_path = f"/tmp/{os.path.basename(blob_name)}"
-    blob.download_to_filename(temp_file_path)
-
-    duration_seconds = 0.0
-    bit_depth = 16 # LINEAR16 explicitly means 16-bit
+    temp_file_path = None # Initialize to None for finally block
 
     try:
-        bytes_per_sample = bit_depth // 8  # 16 bits / 8 bits/byte = 2 bytes
-        bytes_per_frame = bytes_per_sample * num_channels
+        # Check if the blob exists and get its size
+        try:
+            blob.reload()
+        except NotFound:
+            return(f"Error: MP3 blob '{blob_name}' not found in bucket '{bucket_name}'. Please check the name and path.")
+             
+        except GoogleCloudError as e:
+            return(f"Google Cloud error checking MP3 blob existence for '{blob_name}': {e}")
+            
+        except Exception as e:
+            return(f"Unexpected error checking MP3 blob existence for '{blob_name}': {e}")
+          
 
-        file_size_bytes = os.path.getsize(temp_file_path)
+        # Create a temporary local file to download the GCS blob
+        temp_file_path = f"/tmp/{os.path.basename(blob_name)}.mp3" 
+        
+        # Download the entire MP3 file
+        try:
+            blob.download_to_filename(temp_file_path)
+        except GoogleCloudError as e:
+            return(f"Google Cloud error during MP3 download of '{blob_name}': {e}")
+            
+        except Exception as e:
+            return(f"Unexpected error during MP3 download of '{blob_name}': {e}")
+           
 
-        if bytes_per_frame > 0:
-            total_samples = file_size_bytes // bytes_per_frame
-            duration_seconds = total_samples / float(sample_rate)
-        else:
-            print(f"Warning: bytes_per_frame is 0. Check num_channels for {blob_name}.")
+        # Analyze the downloaded MP3 file with tinytag
+        try:
+            tag = TinyTag.get(temp_file_path)
+            duration = tag.duration
+            return duration
+        except Exception as e:
+            return(f"Error extracting duration using tinytag from MP3 file '{temp_file_path}': {e} This might happen if the MP3 file is corrupted or not a valid audio file readable by tinytag.")
 
+
+    except NotFound as e:
+        # This specific NotFound handles cases where the bucket itself might not exist
+        return(f"Error: Bucket '{bucket_name}' not found. Details: {e}")
+        
+    except Exception as e:
+        # Catch any other unexpected errors during the process
+        return(f"An unexpected error occurred: {e}")
+        
     finally:
         # Clean up the temporary file
-        os.remove(temp_file_path)
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except Exception as e:
+                return(f"Error deleting temporary MP3 file '{temp_file_path}': {e}")
 
-    return duration_seconds
-  
+
 async def mux_audio(
     video_uri: str,
     audio_uri: str,
@@ -108,7 +133,7 @@ async def mux_audio(
     
     # hard code bucket
     # TODO: parmaterize this outside the LLM 
-    output_uri_base="gs://byron-alpha-vpagent/muxed_audio_output/"
+    output_uri_base="gs://byron-alpha-vpagent/muxed/"
 
     if not video_uri or not audio_uri:
         raise ValueError("Both 'video_uri' and 'audio_uri' must be provided.")
@@ -150,7 +175,7 @@ async def mux_audio(
     print(f"Video duration: {video_duration:.2f}s")
 
     #print(f"Getting duration for audio: {audio_uri}")
-    audio_duration =  get_linear16_audio_duration_gcs(audio_uri) #await get_media_duration(client, project_id, location, audio_uri)
+    audio_duration =  get_mp3_audio_duration_gcs(audio_uri) #await get_media_duration(client, project_id, location, audio_uri)
     print(f"Audio duration: {audio_duration:.2f}s")
 
     # The atom's effective duration should be the minimum of its component streams

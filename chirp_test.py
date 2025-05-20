@@ -2,10 +2,11 @@ import os
 import trace
 from dotenv import load_dotenv
 from google.api_core.exceptions import GoogleAPICallError
-
+from video_producer_agent.mux_audio import get_mp3_audio_duration_gcs
 # Assuming your updated text_to_speech function is in a file named text_to_speech_chirp.py
 # If it's in the same file as the original, adjust the import accordingly.
-from video_producer_agent.chirp_audio import text_to_speech # Import the wrapper function
+from video_producer_agent.chirp_audio import text_to_speech
+from video_producer_agent.tools import gcs_uri_to_public_url # Import the wrapper function
 
 load_dotenv()
 
@@ -20,8 +21,7 @@ def run_chirp_text_to_speech_example():
 
 
     text_to_speak = (
-        "This is a test sentence spoken by a Chirp 3 HD voice. "
-        "It demonstrates the new text-to-speech functionality saving to a GCS bucket."
+        "This is a test sentence spoken by a Chirp 3 HD voice....It demonstrates the new text-to-speech functionality saving to a GCS bucket."
     )
     # --- End Configuration ---
 
@@ -33,6 +33,14 @@ def run_chirp_text_to_speech_example():
         voice_category="chirp_female_aoede",
         speaking_rate=1.0
     )
+
+    print ("length: ")
+
+    print (get_mp3_audio_duration_gcs(gcs_uri_plain_text))
+
+    print(gcs_uri_to_public_url(gcs_uri_plain_text))
+
+
 
 
 

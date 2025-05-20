@@ -25,7 +25,7 @@ def text_to_speech(
     speaking_rate: float = 1.0
 ) -> str:
     """
-    Synthesizes plain text to LINEAR16 audio using Chirp 3 HD voices and then uploads the generated
+    Synthesizes plain text to mp3 audio using Chirp 3 HD voices and then uploads the generated
     audio file to a specified Google Cloud Storage bucket.
 
     This method performs real-time (online) synthesis, saves the audio locally,
@@ -61,7 +61,7 @@ def text_to_speech(
     google_cloud_project = os.getenv("GOOGLE_CLOUD_PROJECT", "byron-alpha")
     google_cloud_location = "global" # Chirp 3 HD voices are available in 'global' for online synthesis
 
-    output_audio_encoding = texttospeech.AudioEncoding.LINEAR16
+    
 
     if not google_cloud_project:
         google_cloud_project = os.environ.get("GOOGLE_CLOUD_PROJECT")
@@ -98,14 +98,22 @@ def text_to_speech(
     )
 
     # Prepare audio config
+    # audio_config = texttospeech.AudioConfig(
+    #     audio_encoding=texttospeech.AudioEncoding.LINEAR16,
+    #     sampleRateHertz=22500, #this is required for our length tool to work
+    #     speaking_rate=speaking_rate,
+    #     pitch=pitch,
+    #     volume_gain_db=volume_gain_db,
+    # )
     audio_config = texttospeech.AudioConfig(
-        audio_encoding=output_audio_encoding,
+        audio_encoding=texttospeech.AudioEncoding.MP3,
+        #sampleRateHertz=22500, #this is required for our length tool to work
         speaking_rate=speaking_rate,
         pitch=pitch,
         volume_gain_db=volume_gain_db,
     )
 
-    local_filename = f"chirp_output_{uuid.uuid4()}.wav" # Changed extension to .wav for LINEAR16
+    local_filename = f"chirp_output_{uuid.uuid4()}.mp3" 
 
     print(f"Synthesizing text with voice '{voice_category}' to local file '{local_filename}'...")
     try:

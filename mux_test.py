@@ -27,7 +27,7 @@ async def run_mux_audio_test():
     # --- IMPORTANT: Replace with your actual GCS URIs for testing ---
     # Ensure these video and audio files exist in your GCS bucket
     test_video_uri = "gs://byron-alpha-vpagent/scene1.mp4/9575042869931285230/sample_0.mp4"
-    test_audio_uri = "gs://byron-alpha-vpagent/tts_output_e2e663f6-5a76-4cf3-848e-aebde41462ee.pcm"
+    test_audio_uri = "gs://byron-alpha-vpagent/chirp_output_2061b46f-9c93-4f5a-9711-588e57951647.mp3"
  
     # Ensure this output bucket exists and is writable by your Transcoder service account
     test_output_uri_base = "gs://byron-alpha-vpagent/muxed_audio_output/" 
@@ -49,7 +49,7 @@ async def run_mux_audio_test():
         final_output_uri = await mux_audio(
             video_uri=test_video_uri,
             audio_uri=test_audio_uri,
-            end_time_offset=2,
+            end_time_offset=3.23,
             location=location,
         )
         print("\n--- Mux Audio Tool Execution Completed Successfully! ---")

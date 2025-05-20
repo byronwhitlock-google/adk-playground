@@ -33,27 +33,11 @@ async def run_video_generation_example():
     # Call the video_generation_tool with the defined parameters
     result = await video_generation_tool(
         prompt=test_prompt,
-        aspect_ratio=test_aspect_ratio,
-        duration_seconds=test_duration_seconds,
-        enhance_prompt=test_enhance_prompt,
-        negative_prompt=test_negative_prompt,
-        person_generation=test_person_generation,
-        seed=test_seed
+        duration_seconds=test_duration_seconds
     )
 
-    # Print the result of the video generation
-    if isinstance(result, str) and "Error:" in result:
-        print(f"\nVideo Generation Failed: {result}")
-        pprint.pprint(result)
-    elif isinstance(result, str) and result.startswith("gs://"): # Check if it's a GCS URI string
-        print("\nVideo Generation Succeeded!")
-        print("Generated Video Details:")
-        print(f"  GCS URI: {result}") # Directly print the GCS URI
-        print("-" * 20)
-    else:
-        # This else block would catch unexpected successful return types
-        print(f"\nVideo Generation Succeeded with unexpected result type: {type(result)}")
-        pprint.pprint(result)
+
+    pprint.pprint(result,indent=1)
 
 
     print("\n--- Video Generation Tool Example Finished ---")

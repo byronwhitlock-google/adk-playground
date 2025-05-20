@@ -13,7 +13,7 @@ import vertexai
 from typing import Sequence, Dict, Any
 
 
-from .mux_audio import get_linear16_audio_duration_gcs, mux_audio
+from .mux_audio import get_mp3_audio_duration_gcs, mux_audio
 from .chirp_audio import  text_to_speech
 from .tools import gcs_uri_to_public_url
 from .video_join_tool import video_join_tool
@@ -92,7 +92,7 @@ root_agent = Agent(
         video_generation_tool,
         text_to_speech,
         mux_audio,
-        get_linear16_audio_duration_gcs
+        get_mp3_audio_duration_gcs
         
     ]
 )
