@@ -1,39 +1,33 @@
-
-
-
-
-
-
 import uuid
-import traceback # Import traceback for better error logging
+import traceback
 import time
 import tempfile
 import os
 import logging
-import google.auth # Import google.auth to infer project ID
-import base64 # Required for base64 encoding the mediaAnalysis ID
+import google.auth
+import base64
 import asyncio
 from urllib.parse import urlparse
 from typing import List, Dict
-from google.protobuf.duration_pb2 import Duration # Import Duration type for time offsets
-from google.cloud.video.transcoder_v1.types import Job # Corrected import for MediaAnalysis
+from google.protobuf.duration_pb2 import Duration
+from google.cloud.video.transcoder_v1.types import Job
 from google.cloud.video import transcoder_v1
 from google.cloud.exceptions import NotFound, GoogleCloudError
 from google.cloud import storage
 from google.api_core.exceptions import GoogleAPIError
+import math # Import math for log10
 
-# Import the new library
 from tinytag import TinyTag
 
 def get_mp3_audio_duration_gcs(
     audio_uri: str,
 ) -> str :
     """
-    Gets the duration of an MP3 audio file stored in Google Cloud Storage
+    Gets the duration of an MP3 (or potentially WAV with tinytag) audio file stored in Google Cloud Storage
     using a pure Python library (tinytag), without relying on FFmpeg.
 
     Args:
-        audio_uri (str): The GCS URI of the MP3 audio file (e.g., "gs://your-bucket/audio.mp3").
+        audio_uri (str): The GCS URI of the MP3/WAV audio file (e.g., "gs://your-bucket/audio.mp3").
 
     Returns:
         str: The duration of the audio in seconds, or error message if an error occurs.
@@ -57,35 +51,37 @@ def get_mp3_audio_duration_gcs(
         try:
             blob.reload()
         except NotFound:
-            return(f"Error: MP3 blob '{blob_name}' not found in bucket '{bucket_name}'. Please check the name and path.")
+            return(f"Error: MP3/WAV blob '{blob_name}' not found in bucket '{bucket_name}'. Please check the name and path.")
              
         except GoogleCloudError as e:
-            return(f"Google Cloud error checking MP3 blob existence for '{blob_name}': {e}")
+            return(f"Google Cloud error checking MP3/WAV blob existence for '{blob_name}': {e}")
             
         except Exception as e:
-            return(f"Unexpected error checking MP3 blob existence for '{blob_name}': {e}")
+            return(f"Unexpected error checking MP3/WAV blob existence for '{blob_name}': {e}")
           
 
         # Create a temporary local file to download the GCS blob
-        temp_file_path = f"/tmp/{os.path.basename(blob_name)}.mp3" 
+        # Use a more generic extension or detect from blob_name
+        file_extension = os.path.splitext(blob_name)[1] if os.path.splitext(blob_name)[1] else ".tmp"
+        temp_file_path = f"/tmp/{os.path.basename(blob_name)}{file_extension}"
         
-        # Download the entire MP3 file
+        # Download the entire MP3/WAV file
         try:
             blob.download_to_filename(temp_file_path)
         except GoogleCloudError as e:
-            return(f"Google Cloud error during MP3 download of '{blob_name}': {e}")
+            return(f"Google Cloud error during MP3/WAV download of '{blob_name}': {e}")
             
         except Exception as e:
-            return(f"Unexpected error during MP3 download of '{blob_name}': {e}")
+            return(f"Unexpected error during MP3/WAV download of '{blob_name}': {e}")
            
 
-        # Analyze the downloaded MP3 file with tinytag
+        # Analyze the downloaded MP3/WAV file with tinytag
         try:
             tag = TinyTag.get(temp_file_path)
             duration = tag.duration
             return duration
         except Exception as e:
-            return(f"Error extracting duration using tinytag from MP3 file '{temp_file_path}': {e} This might happen if the MP3 file is corrupted or not a valid audio file readable by tinytag.")
+            return(f"Error extracting duration using tinytag from audio file '{temp_file_path}': {e} This might happen if the file is corrupted or not a valid audio file readable by tinytag.")
 
 
     except NotFound as e:
@@ -102,7 +98,7 @@ def get_mp3_audio_duration_gcs(
             try:
                 os.remove(temp_file_path)
             except Exception as e:
-                return(f"Error deleting temporary MP3 file '{temp_file_path}': {e}")
+                return(f"Error deleting temporary audio file '{temp_file_path}': {e}")
 
 
 async def mux_audio(
@@ -168,20 +164,6 @@ async def mux_audio(
 
     # Construct the parent resource path using the inferred project ID and provided location
     parent = f"projects/{project_id}/locations/{location}"
-
-    # --- Get durations of input video and audio ---
-    print(f"Getting duration for video: {video_uri}")
-    video_duration = 8.0# await get_media_duration(client, project_id, location, video_uri)
-    print(f"Video duration: {video_duration:.2f}s")
-
-    #print(f"Getting duration for audio: {audio_uri}")
-    audio_duration =  get_mp3_audio_duration_gcs(audio_uri) #await get_media_duration(client, project_id, location, audio_uri)
-    print(f"Audio duration: {audio_duration:.2f}s")
-
-    # The atom's effective duration should be the minimum of its component streams
-    atom_duration = min(video_duration, audio_duration)
-    print(f"Using atom duration: {atom_duration:.2f}s (min of video and audio)")
-    # --- End duration fetching ---
 
     # Define the job configuration
     job_config = transcoder_v1.types.Job()
@@ -315,3 +297,4 @@ async def mux_audio(
         print("--- End of error details ---\n")
        # raise e
         return f"Error: {type(e).__name__} - {e}"
+

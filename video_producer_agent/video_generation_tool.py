@@ -55,6 +55,7 @@ async def video_generation_tool(
             number_of_videos=1,
             output_gcs_uri=output_gcs_uri,
             person_generation="allow_adult",
+            enhance_prompt=True,
         )
 
         # Create an operation to generate a video

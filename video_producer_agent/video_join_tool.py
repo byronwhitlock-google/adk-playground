@@ -27,7 +27,7 @@ async def video_join_tool(
                                 (e.g., ["gs://your-bucket/file1.mp4", "gs://your-bucket/file2.mp4"]).
         
     Returns:
-        str: The GCS URI of the successfully joined MP4 file.
+        str: The GCS URI of the successfully joined MP4 file. or string error message
 
     Raises:
         ValueError: If the input_uris list is empty, or if project ID cannot be inferred.
@@ -157,7 +157,7 @@ async def video_join_tool(
                     details_list = getattr(response.error, 'details', [])
                     if details_list:
                          error_details_str = f" | Details: {details_list}"
-                raise Exception(f"Transcoder job '{job_name}' failed: {error_message}{error_details_str}")
+                return (f"Transcoder job '{job_name}' failed: {error_message}{error_details_str}")
 
             elif response.state == Job.ProcessingState.PENDING:
                  print(f"Transcoder job '{job_name}' is PENDING. Waiting...")
@@ -176,13 +176,13 @@ async def video_join_tool(
                 print(f"Transcoder job '{job_name}' is in an unexpected state: {current_state_name}. Waiting...")
 
     except GoogleAPIError as e:
-        print(f"Google Cloud API Error occurred for job '{job_name or 'creation'}': {e}")
-        raise
+        return(f"Google Cloud API Error occurred for job '{job_name or 'creation'}': {e}")
+        
     except Exception as e:
         print(f"\n--- An unexpected error occurred in video_join_tool ---")
         print(f"Job Name (if created): {job_name}")
         print(f"Error Type: {type(e).__name__}")
-        print(f"Error Message: {e}")
+        return(f"Error Message: {e}")
         print("Traceback:")
         traceback.print_exc()
         print("--- End of error details ---\n")

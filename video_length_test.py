@@ -24,7 +24,7 @@ async def run_get_video_length_test():
     # --- IMPORTANT: Replace with your actual GCS URIs for testing ---
     # Ensure this video file exists in your GCS bucket and is an MP4.
     # Example: "gs://your-bucket-name/path/to/your_video.mp4"
-    test_video_uri = os.getenv("TEST_VIDEO_URI")
+    test_video_uri =  "gs://byron-alpha-vpagent/commercials/117f74eb3a104b6fbeeaa327b99964dc.mp4"
 
     # --- Pre-checks ---
     if not test_video_uri:

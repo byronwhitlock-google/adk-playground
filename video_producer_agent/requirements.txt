@@ -59,6 +59,7 @@ MarkupSafe==3.0.2
 mcp==1.7.1
 mdurl==0.1.2
 moviepy==2.1.2
+mutagen==1.47.0
 numpy==2.2.5
 opentelemetry-api==1.32.1
 opentelemetry-exporter-gcp-trace==1.9.0

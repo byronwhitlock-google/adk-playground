@@ -12,6 +12,12 @@ from vertexai.preview.generative_models import GenerativeModel
 import vertexai
 from typing import Sequence, Dict, Any
 
+from .video_length_tool import get_video_length_gcs_partial_download
+
+from .lyria_music import generate_lyria_music
+
+from .mux_music import mux_music
+
 
 from .mux_audio import get_mp3_audio_duration_gcs, mux_audio
 from .chirp_audio import  text_to_speech
@@ -32,18 +38,19 @@ prompt="""
 
   each scene should be no more than 8 seconds long and include  the video generation prompt, the narration input for the text to speech tool, and the text overlays.
   
-  Change up the voices and speed of speech for different scenes to keep it interesting.
 
   first generate the audio  for each scene using the text to speech tool. check the length with the get_linear16_audio_duration_gcs tool. then generate video with a length longer than the audio. Never truncate more than 1 second of audio. use dramatic pauses using ... 
 
-  if audio is longer than 8 seconds, first regenerate with a faster speaking rate up to 2.0. then try a shorter prompt. Only try 3 times before giving up.
-  
+  if audio is longer than 8 seconds, first regenerate with a faster speaking rate up to 1.3. then try a shorter prompt. Only try 3 times before giving up.
+  if the audio is shorter than 4 seconds, regenerate with a slower rate up to 0.8. 
     
   Mux each scenes audio stream and video stream together using the mux audio tool.
   The final commercial, join the video clips using the video join tool and convert the GCS URI of the video to a public URL.
 
   choose video generation prompts safe and low risk for content protection
 
+  When complete, create a musical score and generate_lyris_music and mux it with with the final video.  
+  
 never use first or last names in the video generation prompt.
      example video generation prompts:
       A video with smooth motion that dollies in on a desperate man in a green trench coat, using a vintage rotary phone against a wall bathed in an eerie green neon glow. The camera starts from a medium distance, slowly moving closer to the man's face, revealing his frantic expression and the sweat on his brow as he urgently dials the phone. The focus is on the man's hands, his fingers fumbling with the dial as he desperately tries to connect. The green neon light casts long shadows on the wall, adding to the tense atmosphere. The scene is framed to emphasize the isolation and desperation of the man, highlighting the stark contrast between the vibrant glow of the neon and the man's grim determination.
@@ -75,7 +82,7 @@ never use first or last names in the video generation prompt.
     
     generate the commercial one scene at a time.
     show a plan of the video generation and audio generation process, and ask the user for confirmation before starting. 
-  Show the audio prompt, video prompt, voice type and speed.
+  Show overall musical prompt, each scene's audio prompt, video prompt,  voice type and speed.
 
   Bucket name is gs://byron-alpha-vpagent and location is us-central1
 
@@ -92,7 +99,10 @@ root_agent = Agent(
         video_generation_tool,
         text_to_speech,
         mux_audio,
-        get_mp3_audio_duration_gcs
+        get_mp3_audio_duration_gcs,
+        mux_music,
+        generate_lyria_music,
+        get_video_length_gcs_partial_download,
         
     ]
 )
