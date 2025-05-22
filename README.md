@@ -79,18 +79,20 @@ This project requires several environment variables to be set for accessing Goog
 ## Usage
 
 ### Running the Agent
-To run the video commercial generation process, you would typically execute a Python script that initializes and runs the `video_producer_agent.agent.root_agent`. The exact script and command will depend on the project's entry point (e.g., a `main.py` file).
+This project is designed to be run using the Google Agent Development Kit (ADK). The primary way to run the agent is using the `adk web` command, which starts a local web server to interact with the agent.
 
-*(Example - actual script might differ):*
-```bash
-# Ensure your .env file is populated or environment variables are set.
-# python main.py --prompt "A commercial for a new brand of coffee." 
-# The precise command depends on the project's main execution script.
-```
-You will need to create a Python script (e.g., `main.py`) that imports `video_producer_agent.agent.root_agent` and calls its methods to process a prompt.
+1.  **Ensure your environment variables are set** as described in the "Environment Variables" section (e.g., by ensuring your `.env` file is present and populated).
+2.  **Run the ADK web server:**
+    ```bash
+    adk web
+    ```
+    This will start a web interface, typically on `http://localhost:8000`, where you can interact with the `video_producer_agent`.
+
+3.  **Interact with the Agent:**
+    Once the web server is running, open the provided URL in your browser. You can then send prompts to the agent through the web interface. For example, you could provide a creative brief as described below.
 
 ### Example Input Prompt
-Provide the `video_producer_agent` with a creative brief like:
+Through the ADK web interface, provide the `video_producer_agent` with a creative brief like:
 ```
 "Create a 30-second commercial for a new brand of coffee called 'Morning Spark'.
 Scene 1: Show a person waking up groggy.
@@ -117,9 +119,8 @@ The agent might also output URLs for intermediate scene videos during the genera
 *   **Google Generative AI Models:**
     *   Veo (Video generation)
     *   Lyria (Music generation)
-*   **`google-cloud-adk`**: Google Agent Development Kit for building and running the AI agent.
+*   **Google ADK (Agent Development Kit)**: Used for building and running the AI agent (includes `google-cloud-adk` components).
 *   **`python-dotenv`**: For managing environment variables.
 *   **`requests`**: For making HTTP requests.
 *   **`tinytag`**, **`mutagen`**: Libraries for reading audio/video metadata.
-*   **FFmpeg**: (System Dependency) While not directly listed in `requirements.txt` for Python import, FFmpeg is a common underlying system dependency for many video and audio processing tasks. Ensure it's installed on the system where the agent runs, as tools for transcoding or muxing might rely on it.
 ```

@@ -1,45 +1,46 @@
 
-# --- Synchronous Example Usage (Explicit Arguments) ---
-from video_producer_agent.text_to_speech import synthesize_text_to_gcs_sync
+# This script tests synchronous text-to-speech synthesis to GCS,
+# specifically using the `synthesize_text_to_gcs_sync` function
+# which requires all synthesis parameters to be explicitly provided.
 
-from google.api_core.exceptions import GoogleAPICallError # <-- Add this import
+from video_producer_agent.text_to_speech import synthesize_text_to_gcs_sync
+from google.api_core.exceptions import GoogleAPICallError
 from dotenv import load_dotenv
 
 load_dotenv()
+
 def run_sync_explicit_example():
-    """Runs a simple demonstration requiring explicit args for synthesis."""
+    """
+    Runs a simple demonstration of `synthesize_text_to_gcs_sync`
+    requiring explicit arguments for synthesis.
+    """
 
     # --- Configuration ---
-    your_gcs_bucket = "byron-alpha-vpagent"
+    gcs_bucket_name = "byron-alpha-vpagent" # Target GCS bucket for output
+    google_cloud_project = "byron-alpha"     # GCP Project ID for the API call
+    google_cloud_location = "us-central1"    # GCP Location for the API call
 
     text_to_speak = (
         "This test requires explicit parameters for speaking rate, pitch, "
-        "volume, effects, timeout, and SSML flag."
+        "volume, timeout, and SSML flag."
     )
     # --- End Configuration ---
 
-    if your_gcs_bucket == "your-gcs-bucket-name-here" or not your_gcs_bucket:
-        print("🔴 CRITICAL: Please open this script and replace "
-              "'your-gcs-bucket-name-here' with your actual GCS bucket name.")
-        return
-
     print(f"\n--- Synthesizing with category: 'male_low' (Plain Text - Explicit Args) ---")
     try:
-        # Call the synchronous function providing ALL arguments explicitly
+        # Call the synchronous function providing ALL required arguments explicitly
+        # Note: effects_profile_id is handled internally by synthesize_text_to_gcs_sync
         gcs_uri = synthesize_text_to_gcs_sync(
             text=text_to_speak,
-            gcs_bucket_name=your_gcs_bucket,
+            gcs_bucket_name=gcs_bucket_name,
             voice_category="male_low",
-            # --- Provide values for previously defaulted arguments ---
-            speaking_rate=1.0,      # Provide rate (1.0 = normal)
-            pitch=0.0,              # Provide pitch (0.0 = normal)
-            volume_gain_db=0.0,     # Provide volume (0.0 = normal)
-            effects_profile_id=None,# Provide effects profile (None = none)
-            timeout_seconds=300.0,  # Provide timeout
-            is_ssml=False,           # Provide SSML flag
-            GOOGLE_CLOUD_PROJECT="byron-alpha", # Replace with your project ID
-            GOOGLE_CLOUD_LOCATION="us-central1", # Replace with your location
-            # --- End explicit arguments ---
+            speaking_rate=1.0,
+            pitch=0.0,
+            volume_gain_db=0.0,
+            timeout_seconds=300.0,
+            is_ssml=False, 
+            GOOGLE_CLOUD_PROJECT=google_cloud_project,
+            GOOGLE_CLOUD_LOCATION=google_cloud_location,
         )
         print(f"✅ Plain text synthesis complete for 'male_low'. File at: {gcs_uri}")
 
@@ -48,6 +49,4 @@ def run_sync_explicit_example():
 
 # --- Script Execution ---
 if __name__ == "__main__":
-
-
-    run_sync_explicit_example() # Call the example function
+    run_sync_explicit_example()

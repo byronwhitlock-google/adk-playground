@@ -1,16 +1,15 @@
 import asyncio
 import os
 import sys
-from datetime import datetime
 from dotenv import load_dotenv
-# Assuming mux_music and get_media_duration are in the same module or correctly imported
+# This test uses video_producer_agent.mux_music to combine a video with background music.
 
 from video_producer_agent.mux_audio import get_mp3_audio_duration_gcs
 from video_producer_agent.mux_music import mux_music
 from video_producer_agent.tools import gcs_uri_to_public_url
 
-from google.cloud.video import transcoder_v1
-from video_producer_agent.video_length_tool import get_video_length_gcs_partial_download # Import transcoder_v1 client
+from google.cloud.video import transcoder_v1 # Transcoder API client, used by mux_music
+from video_producer_agent.video_length_tool import get_video_length_gcs_partial_download # For getting video duration
 
 # Load environment variables from .env file
 load_dotenv()
@@ -18,7 +17,8 @@ load_dotenv()
 async def run_mux_music_test():
     """
     Executes the mux_music function with hardcoded data for a real-world test.
-    Ensures necessary environment variables are set.
+    Ensures necessary environment variables are set and that the specified GCS
+    URIs for video and music files exist.
     """
     print("--- Starting Mux Music Tool Real Execution Test ---")
 
@@ -26,19 +26,14 @@ async def run_mux_music_test():
     project_id = os.getenv("GOOGLE_CLOUD_PROJECT")
     location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 
-    # --- IMPORTANT: Replace with your actual GCS URIs for testing ---
-    # Ensure these video and audio files exist in your GCS bucket
-    # The MP4 file with existing audio and video
-    test_video_with_audio_uri = "gs://byron-alpha-vpagent/muxed/f5b390610a2a4fb9bc83808e876b5e7e.mp4"
-    # The WAV music file
-    test_music_uri = "gs://byron-alpha-vpagent/lyria_output_7d7be0d3-8ef4-4044-8641-55d61a7dc953.wav"
+    # --- IMPORTANT: These GCS URIs must point to existing files for the test to pass ---
+    test_video_with_audio_uri = "gs://byron-alpha-vpagent/muxed/f5b390610a2a4fb9bc83808e876b5e7e.mp4" # MP4 with existing audio/video
+    test_music_uri = "gs://byron-alpha-vpagent/lyria_output_7d7be0d3-8ef4-4044-8641-55d61a7dc953.wav"    # WAV music file
 
+    test_volume_music = 0.3 # Volume for the background music (0.0 to 1.0)
 
-
-    test_start_time_offset_music = 0.0
-    test_volume_music = .3
-
-    test_output_uri_base = "gs://byron-alpha-vpagent/muxed_music_output/" # Not directly used by mux_music now, but good for context
+    # Note: The output base URI is defined within the mux_music tool itself.
+    # test_output_uri_base = "gs://byron-alpha-vpagent/muxed_music_output/" 
 
     # --- Pre-checks ---
     if not project_id:
@@ -46,16 +41,24 @@ async def run_mux_music_test():
         print("Please ensure it's defined in your .env file or your environment.")
         sys.exit(1)
     
+    print("Fetching video and music durations...")
     video_duration = get_video_length_gcs_partial_download(test_video_with_audio_uri)
-    music_duration= get_mp3_audio_duration_gcs(test_music_uri)
+    if isinstance(video_duration, str) and video_duration.startswith("Error"):
+        print(f"Failed to get video duration: {video_duration}")
+        sys.exit(1)
+        
+    music_duration = get_mp3_audio_duration_gcs(test_music_uri)
+    if isinstance(music_duration, str) and music_duration.startswith("Error"):
+        print(f"Failed to get music duration: {music_duration}")
+        sys.exit(1)
+
     print(f"Using Project ID: {project_id}")
     print(f"Using Location: {location}")
     print(f"Input MP4 with Audio/Video URI: {test_video_with_audio_uri}")
     print(f"Input Music (WAV) URI: {test_music_uri}")
-    print(f"Music Start Time Offset: {test_start_time_offset_music} seconds")
     print(f"Music Volume: {test_volume_music}")
-    print(f"main_video_duration: {video_duration}")
-    print(f"music_duration: {music_duration}")
+    print(f"Main Video Duration (seconds): {video_duration}")
+    print(f"Music Duration (seconds): {music_duration}")
 
 
 
