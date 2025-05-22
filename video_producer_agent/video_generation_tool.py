@@ -1,3 +1,4 @@
+import asyncio
 import pprint
 from google.adk.agents import LlmAgent
 from google.adk.agents import Agent
@@ -35,7 +36,7 @@ async def video_generation_tool(
         prompt (str): The prompt to be sent to the video generation tool
         duration_seconds (int): Desired duration of the generated video in seconds valid values are (5,6,7,8).
     Returns:
-        types.GenerateVideosResponse: The response from the video generation tool.
+        types.GenerateVideosResponse: The response from the video generation tool. or string error
     """
     try:
 
@@ -66,46 +67,14 @@ async def video_generation_tool(
         )
         # Wait for video generation to complete
         while not operation.done:
-            time.sleep(2)
+            await asyncio.sleep(5) # Polling interval (e.g., 15 seconds)
             operation = client.operations.get(operation)
         pprint.pprint(operation)
         
         return operation.response
         
         
-        # # Explicitly check the type of operation immediately after the call
-        # if not isinstance(operation, types.GenerateVideosOperation): # Assuming genai.Client returns types.Operation
-        #     return f"Error: Expected an operation object, but received: {type(operation).__name__} - {operation}"
-
-        # # Wait for video generation to complete
-        # while operation.done == None:
-        #     time.sleep(1) # Still sleep to wait for completion
-        #     if not hasattr(operation, 'name'):
-        #         return f"Error: Operation object missing 'name' attribute during status check. Type: {type(operation).__name__}"
-        #     pprint.pprint (operation)
-        #    # print ("tring this op "+op.name)
-        #     operation =   client.operations.get(operation.name) # Use operation.name to get the latest status
-
-        # # Check if the operation completed successfully and has a response
-        # if operation.done :
-        #     if operation.error:
-        #         # If there's an error in the operation, return the error message
-        #         return f"Video generation failed with error: {operation.error.message} (Code: {operation.error.code})"
-        #     elif operation.response:
-        #         # Check if 'generated_videos' attribute exists before accessing it
-        #         if hasattr(operation.response, 'generated_videos'):
-        #             return operation.response.generated_videos
-        #         else:
-        #             # If 'generated_videos' is not found, it means the response structure is unexpected
-        #             return "Error: 'generated_videos' attribute not found in the operation response."
-        #     else:
-        #         # If operation.response is None, but no error, indicate no response
-        #         return "Error: Video generation operation completed but returned no response."
-        # else:
-        #     # This case should ideally not be hit if the while loop exits because operation.done is true
-        #     return "Error: Video generation operation did not complete successfully."
-
     except Exception as e:
         # Catch any other general exceptions that might occur during the process
-        #return f"Error generating video: {str(e)}"
-        raise e
+        return f"Error generating video: {str(e)}"
+        #raise e
