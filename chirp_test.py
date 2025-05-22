@@ -15,7 +15,9 @@ def run_chirp_text_to_speech_example():
 
     # --- Configuration ---
     text_to_speak = (
-        "This is a test sentence spoken by a Chirp 3 HD voice. It demonstrates the new text-to-speech functionality saving to a GCS bucket."
+        "This is a test sentence spoken by a Chirp 3 HD voice....It"
+        " demonstrates the new text-to-speech functionality saving to a GCS"
+        " bucket."
     )
     # --- End Configuration ---
 

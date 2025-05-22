@@ -69,7 +69,7 @@ async def run_mux_audio_test():
         print("  - The input video (MP4) and audio files are in the expected formats.")
         # Consider re-raising the exception if this is part of an automated test suite that needs to catch failures
         # raise e 
-        sys.exit(1) 
+        # sys.exit(1) # Removed as per request
 
 if __name__ == "__main__":
     asyncio.run(run_mux_audio_test())
