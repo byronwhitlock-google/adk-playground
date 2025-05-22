@@ -84,17 +84,6 @@ async def mux_music(
     client = transcoder_v1.TranscoderServiceAsyncClient()
     parent = f"projects/{project_id}/locations/{location}"
 
-    # print(f"Getting duration for main video: {video_with_audio_uri}")
-    # main_video_duration = await get_media_duration(client, project_id, location, video_with_audio_uri)
-    # print(f"Main video duration: {main_video_duration:.2f}s")
-
-    # print(f"Getting duration for music: {music_uri}")
-    # music_duration_str = get_mp3_audio_duration_gcs(music_uri)
-    # if isinstance(music_duration_str, str) and music_duration_str.startswith("Error"):
-    #     raise Exception(f"Failed to get music duration: {music_duration_str}")
-    # music_duration = float(music_duration_str)
-    # print(f"Music duration: {music_duration:.2f}s")
-
     job_config = transcoder_v1.types.Job()
     job_config.output_uri = output_uri_base
     job_config.config = transcoder_v1.types.JobConfig()
@@ -240,7 +229,6 @@ async def mux_music(
                     if details_list:
                          error_details_str = f" | Details: {details_list}"
                 raise Exception(f"Transcoder job '{job_name}' failed: {error_message}{error_details_str}")
-            # Add other states for more informative polling messages
             elif response.state == Job.ProcessingState.PENDING:
                 print(f"Transcoder job '{job_name}' is PENDING. Waiting...")
             elif response.state == Job.ProcessingState.RUNNING:
@@ -257,6 +245,6 @@ async def mux_music(
         print(f"Job Name (if created): {job_name}")
         print(f"Error Type: {type(e).__name__}")
         print(f"Error Message: {e}")
-        # traceback.print_exc() # Uncomment for full traceback during debugging
+        # traceback.print_exc()
         print("--- End of error details ---\n")
         return f"Error: {type(e).__name__} - {e}"

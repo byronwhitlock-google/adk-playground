@@ -1,16 +1,5 @@
-import random
-import time
 from google.adk.agents import Agent
-from google.adk.tools import ToolContext
-from google.adk.tools.agent_tool import AgentTool
-from google.adk.tools.function_tool import FunctionTool
-from google.cloud import aiplatform
-from google.adk.agents import LlmAgent
-from google import genai
-from google.genai import types
-from vertexai.preview.generative_models import GenerativeModel
-import vertexai
-from typing import Sequence, Dict, Any
+
 
 from .video_length_tool import get_video_length_gcs_partial_download
 
@@ -26,8 +15,6 @@ from .video_join_tool import video_join_tool
 from .video_generation_tool import video_generation_tool
 
 
-# we cam add this into the prompt to padd the audio. otherwise, the video gets truncated 1 second afer the audio is done.
-padding_prompt= 'If the audio is shorter than 8 seconds, regenerate with a longer <break time="0.5s"/> to pad silence at the end of the text to speech audio stream. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>.  the narration prompt should ALWAYS end with <break time="1s"/> tag to ensure the audio not cut off.  Pad dramatic pauses. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>'
 prompt="""
   You are an expert Commercial director, cinematographer, script writer and Producer AI Agent. Your primary function is to
   translate unstructured user thoughts and ideas for a TV commercial into a
@@ -90,10 +77,9 @@ never use first or last names in the video generation prompt.
   """
 root_agent = Agent(
     name="video_producer_agent",
-    model="gemini-2.0-flash",  #  Make sure this is the correct model identifier
+    model="gemini-2.0-flash",
     instruction=prompt,
     tools=[
-        #AgentTool(agent=video_generation_agent),
         gcs_uri_to_public_url,
         video_join_tool,
         video_generation_tool,
