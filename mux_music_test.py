@@ -36,7 +36,7 @@ async def run_mux_music_test():
 
 
     test_start_time_offset_music = 0.0
-    test_volume_music = 0.3
+    test_volume_music = .3
 
     test_output_uri_base = "gs://byron-alpha-vpagent/muxed_music_output/" # Not directly used by mux_music now, but good for context
 
@@ -69,9 +69,7 @@ async def run_mux_music_test():
             music_uri=test_music_uri,
             main_video_duration=video_duration, # Pass the duration as a parameter
             music_duration=music_duration,
-            start_time_offset_music=test_start_time_offset_music,
             volume_music=test_volume_music,
-            location=location,
         )
         print("\n--- Mux Music Tool Execution Completed Successfully! ---")
         print(f"Muxed output with background music available at: {final_output_uri}")

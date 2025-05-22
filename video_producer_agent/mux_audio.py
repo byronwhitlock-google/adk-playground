@@ -105,7 +105,7 @@ async def mux_audio(
     video_uri: str,
     audio_uri: str,
     end_time_offset: float,
-    location: str,
+
 ) -> str:
     """
     Muxes the audio and video streams using the Transcoder API and
@@ -116,8 +116,7 @@ async def mux_audio(
         video_uri (str): The GCS URI of the video file (e.g., "gs://your-bucket/video.mp4").
         audio_uri (str): The GCS URI of the audio file (e.g., "gs://your-bucket/audio.pcm").
         end_time_offset (float): The end time offset for the muxed output in seconds (must be the minimum of video and audio durations).
-        location (str): The GCP region for the Transcoder job. Examples: "us-central1",
-                        "us-east1", "europe-west1", "asia-southeast1".
+
                         
     Returns:
         str: The GCS URI of the successfully muxed MP4 file., or error message if failed.
@@ -129,7 +128,9 @@ async def mux_audio(
     
     # hard code bucket
     # TODO: parmaterize this outside the LLM 
-    output_uri_base="gs://byron-alpha-vpagent/muxed/"
+    bucket_name = os.getenv("GOOGLE_CLOUD_BUCKET", "byron-alpha-vpagent") # As per user's last snippet
+
+    output_uri_base=f"gs://{bucket_name}/muxed/"
 
     if not video_uri or not audio_uri:
         raise ValueError("Both 'video_uri' and 'audio_uri' must be provided.")
@@ -137,8 +138,9 @@ async def mux_audio(
         raise ValueError(f"Invalid GCS video URI: {video_uri}. Input URIs must start with 'gs://'.")
     if not audio_uri.startswith("gs://"):
         raise ValueError(f"Invalid GCS audio URI: {audio_uri}. Input URIs must start with 'gs://'.")
-    if not location:
-        raise ValueError("The 'location' argument cannot be empty.")
+    
+    location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1") # Default to us-central1 if not set
+
     
     # Infer the project ID from the environment
     try:

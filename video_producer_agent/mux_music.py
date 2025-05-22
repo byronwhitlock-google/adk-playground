@@ -24,9 +24,7 @@ from tinytag import TinyTag
 async def mux_music(
     video_with_audio_uri: str,
     music_uri: str,
-    start_time_offset_music: float,
     volume_music: float,
-    location: str,
     music_duration: float,
     main_video_duration: float
 ) -> str:
@@ -41,10 +39,8 @@ async def mux_music(
                                      (e.g., "gs://your-bucket/input_video.mp4").
         music_uri (str): The GCS URI of the WAV music file
                          (e.g., "gs://your-bucket/background_music.wav").
-        start_time_offset_music (float): The time in seconds where the music
-                                         should start playing in the output.
         volume_music (float): The volume of the music track (0.0 to 1.0, where 1.0 is full volume).
-        location (str): The GCP region for the Transcoder job.
+
         music_duration (float): The duration of the music track in seconds.
         main_video_duration (float): The duration of the main video track in seconds.
 
@@ -67,10 +63,10 @@ async def mux_music(
         raise ValueError(f"Invalid GCS video URI: {video_with_audio_uri}. Input URIs must start with 'gs://'.")
     if not music_uri.startswith("gs://"):
         raise ValueError(f"Invalid GCS music URI: {music_uri}. Input URIs must start with 'gs://'.")
-    if not location:
-        raise ValueError("The 'location' argument cannot be empty.")
     if not 0.0 <= volume_music <= 1.0:
         raise ValueError("Volume must be between 0.0 and 1.0.")
+    
+    location = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1") # Default to us-central1 if not set
 
     try:
         credentials, project_id = google.auth.default()
@@ -113,6 +109,7 @@ async def mux_music(
     )
 
     # Convert start_time_offset_music to Duration
+    start_time_offset_music=0
     start_offset_music_duration = Duration()
     start_offset_music_duration.seconds = int(start_time_offset_music)
     start_offset_music_duration.nanos = int((start_time_offset_music - start_offset_music_duration.seconds) * 1e9)
@@ -132,7 +129,7 @@ async def mux_music(
     job_config.config.edit_list.append(
         transcoder_v1.types.EditAtom(
             key="main_content_atom",
-            inputs=["main_input","music_input"],
+            inputs=["music_input","main_input"],
             # Explicitly set end_time_offset for main content to its full duration
             # This ensures the main content is not truncated if the music is shorter
             start_time_offset=Duration(seconds=0),
@@ -140,6 +137,7 @@ async def mux_music(
                                      nanos=int((main_video_duration - int(main_video_duration)) * 1e9))
         )
     )
+   
 
     # Elementary streams for video (from main input)
     job_config.config.elementary_streams.append(
@@ -165,41 +163,40 @@ async def mux_music(
                 bitrate_bps=128000,
                 sample_rate_hertz=48000,
                 channel_count=2,
-                # mapping_=[ 
-                #     transcoder_v1.types.AudioStream.AudioMapping (
-                #         atom_key="main_content_atom", # Reference the music edit atom
-                #         input_key="main_input"
-                #     ), 
-                #     transcoder_v1.types.AudioStream.AudioMapping (
-                #         atom_key="music_atom", # Reference the music edit atom
-                #         input_key="music_input",
-                #         input_channel=0,
-                #         output_channel=0,
-                #         gain_db=(20 * math.log10(volume_music)) if volume_music > 0 else -100 # Apply volume
-                #     ), 
-                #     transcoder_v1.types.AudioStream.AudioMapping (
-                #         atom_key="music_atom", # Reference the music edit atom
-                #         input_key="music_input",
-                #         input_channel=1,
-                #         output_channel=1,
-                #         gain_db=(20 * math.log10(volume_music)) if volume_music > 0 else -100 # Apply volume
-                #     ), 
-                # ]
+                mapping_=[ 
+                    transcoder_v1.types.AudioStream.AudioMapping (
+                        atom_key="main_content_atom", # Reference the music edit atom
+                        input_key="main_input",
+                        input_track=1,
+                        output_channel=0,
 
-
-                    
-                #     transcoder_v1.types.AudioStream.AudioMapping (
-                #         atom_key="music_atom", # Reference the music edit atom
-                #         input_key="music_input",
-                #         input_track=0,
-                #         input_channel=0,
-                #         output_channel=2,
-                #         gain_db=(20 * math.log10(volume_music)) if volume_music > 0 else -100 # Apply volume
-                #     ),
-                # ]
+                    ),                    transcoder_v1.types.AudioStream.AudioMapping (
+                        atom_key="main_content_atom", # Reference the music edit atom
+                        input_key="main_input",
+                        input_track=1,
+                        output_channel=1,
+                    ),
+                    transcoder_v1.types.AudioStream.AudioMapping (
+                        atom_key="main_content_atom", # Reference the music edit atom
+                        input_key="music_input",
+                        input_track=0,
+                        input_channel=0,
+                        output_channel=0,
+                        gain_db=(20 * math.log10(volume_music)) if volume_music > 0 else -100 # Apply volume
+                    ), 
+                    transcoder_v1.types.AudioStream.AudioMapping (
+                        atom_key="main_content_atom", # Reference the music edit atom
+                        input_key="music_input",
+                        input_track=0,
+                        input_channel=1,
+                        output_channel=1,
+                        gain_db=(20 * math.log10(volume_music)) if volume_music > 0 else -100 # Apply volume
+                    ),
+                ]
             ),
         )
     )
+    
     
     # Mux streams: Combine video, original audio, and new music audio
     job_config.config.mux_streams.append(
@@ -209,7 +206,7 @@ async def mux_music(
             elementary_streams=[
                 "output_video_stream",
                 "output_audio_stream",
-               # "output_music_audio_stream"
+               # "output_music_stream"
             ],
             file_name=output_filename,
         )

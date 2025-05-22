@@ -50,7 +50,6 @@ async def run_mux_audio_test():
             video_uri=test_video_uri,
             audio_uri=test_audio_uri,
             end_time_offset=3.23,
-            location=location,
         )
         print("\n--- Mux Audio Tool Execution Completed Successfully! ---")
         #print(final_output_uri)
