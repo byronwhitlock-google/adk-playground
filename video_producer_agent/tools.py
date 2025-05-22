@@ -65,26 +65,3 @@ def gcs_uri_to_public_url(gcs_uri: str) -> str:
     public_url = f"https://storage.googleapis.com/{bucket_name}/{object_name}"
 
     return public_url
-
-# --- Example Usage ---
-gcs_video_uri = "gs://byron-alpha-vpagent/3208593487945471240/sample_0.mp4"
-
-try:
-    http_video_url = gcs_uri_to_public_url(gcs_video_uri)
-    # print(f"GCS URI: {gcs_video_uri}")
-    # print(f"Public URL: {http_video_url}")
-
-    # Example with nested folders in object name
-    gcs_nested_uri = "gs://my-cool-bucket/data/videos/archive/vid_001.mp4"
-    http_nested_url = gcs_uri_to_public_url(gcs_nested_uri)
-    # print(f"\nGCS URI: {gcs_nested_uri}")
-    # print(f"Public URL: {http_nested_url}")
-
-except ValueError as e:
-    print(f"Error: {e}")
-
-# --- Note on your provided return statement ---
-# The return statement you included in your request:
-# return f"gs://{bucket_name}/{object_name}"
-# actually performs the *reverse* operation (converting components back to a GCS URI).
-# The function above implements the conversion described in your text and example.

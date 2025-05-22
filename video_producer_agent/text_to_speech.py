@@ -62,7 +62,6 @@ def synthesize_text_to_gcs_sync(
     speaking_rate: float,
     pitch: float,
     volume_gain_db: float,
-    #effects_profile_id: list[str] | None, # Type hint allows None, but must be passed
     timeout_seconds: float,
     is_ssml: bool,
     GOOGLE_CLOUD_PROJECT: str,
@@ -123,7 +122,6 @@ def synthesize_text_to_gcs_sync(
         speaking_rate=speaking_rate,
         pitch=pitch,
         volume_gain_db=volume_gain_db,
-        #effects_profile_id=effects_profile_id if effects_profile_id else
         effects_profile_id=[],
     )
 

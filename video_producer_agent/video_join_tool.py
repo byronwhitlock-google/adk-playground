@@ -1,4 +1,3 @@
-import time
 import uuid
 from google.cloud.video import transcoder_v1
 from google.cloud.video.transcoder_v1.types import Job
@@ -182,7 +181,7 @@ async def video_join_tool(
         print(f"\n--- An unexpected error occurred in video_join_tool ---")
         print(f"Job Name (if created): {job_name}")
         print(f"Error Type: {type(e).__name__}")
-        return(f"Error Message: {e}")
+        print(f"Error Message: {e}")
         print("Traceback:")
         traceback.print_exc()
         print("--- End of error details ---\n")

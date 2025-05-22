@@ -98,16 +98,8 @@ def text_to_speech(
     )
 
     # Prepare audio config
-    # audio_config = texttospeech.AudioConfig(
-    #     audio_encoding=texttospeech.AudioEncoding.LINEAR16,
-    #     sampleRateHertz=22500, #this is required for our length tool to work
-    #     speaking_rate=speaking_rate,
-    #     pitch=pitch,
-    #     volume_gain_db=volume_gain_db,
-    # )
     audio_config = texttospeech.AudioConfig(
         audio_encoding=texttospeech.AudioEncoding.MP3,
-        #sampleRateHertz=22500, #this is required for our length tool to work
         speaking_rate=speaking_rate,
         pitch=pitch,
         volume_gain_db=volume_gain_db,

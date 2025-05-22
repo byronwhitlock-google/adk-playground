@@ -6,9 +6,6 @@ import logging
 from mutagen.mp4 import MP4, MP4StreamInfoError # For MP4 parsing
 from urllib.parse import urlparse
 
-# Configure logging
-# logging.basicConfig(level=print, format='%(asctime)s - %(levelname)s - %(message)s')
-
 def get_duration_with_mutagen(file_path: str) -> float:
     """
     Uses the mutagen library to get the duration of an MP4 file.

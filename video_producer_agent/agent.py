@@ -1,16 +1,5 @@
-import random
-import time
 from google.adk.agents import Agent
-from google.adk.tools import ToolContext
-from google.adk.tools.agent_tool import AgentTool
-from google.adk.tools.function_tool import FunctionTool
-from google.cloud import aiplatform
-from google.adk.agents import LlmAgent
-from google import genai
-from google.genai import types
-from vertexai.preview.generative_models import GenerativeModel
-import vertexai
-from typing import Sequence, Dict, Any
+
 
 from .video_length_tool import get_video_length_gcs_partial_download
 
@@ -90,10 +79,9 @@ never use first or last names in the video generation prompt.
   """
 root_agent = Agent(
     name="video_producer_agent",
-    model="gemini-2.0-flash",  #  Make sure this is the correct model identifier
+    model="gemini-2.0-flash",
     instruction=prompt,
     tools=[
-        #AgentTool(agent=video_generation_agent),
         gcs_uri_to_public_url,
         video_join_tool,
         video_generation_tool,
