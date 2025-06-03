@@ -148,10 +148,10 @@ async def mux_music(
         transcoder_v1.types.ElementaryStream(
             key="output_audio_stream",
             audio_stream=transcoder_v1.types.AudioStream(
-                codec="mp3",
-                bitrate_bps=128000,
-                sample_rate_hertz=48000,
-                channel_count=2,
+                codec="aac", # Recommended for MP4 output
+                bitrate_bps=128000, # Example: 128 kbps for AAC audio
+                sample_rate_hertz=48000, # Example: 48 kHz
+                channel_count=2, # Example: Stereont=2,
                 mapping_=[ 
                     transcoder_v1.types.AudioStream.AudioMapping (
                         atom_key="main_content_atom", # Reference the music edit atom
@@ -159,7 +159,8 @@ async def mux_music(
                         input_track=1,
                         output_channel=0,
 
-                    ),                    transcoder_v1.types.AudioStream.AudioMapping (
+                    ),
+                    transcoder_v1.types.AudioStream.AudioMapping (
                         atom_key="main_content_atom", # Reference the music edit atom
                         input_key="main_input",
                         input_track=1,

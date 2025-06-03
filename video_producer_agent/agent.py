@@ -1,5 +1,9 @@
 from google.adk.agents import Agent
 
+from .upload_image import store_image_artifact_in_gcs
+
+from .image_video_generation_tool import image_and_text_to_video_tool
+
 
 from .video_length_tool import get_video_length_gcs_partial_download
 
@@ -13,7 +17,7 @@ from .chirp_audio import  text_to_speech
 from .tools import gcs_uri_to_public_url
 from .video_join_tool import video_join_tool
 from .video_generation_tool import video_generation_tool
-
+from .image_process import  process_image_tool
 
 # we cam add this into the prompt to padd the audio. otherwise, the video gets truncated 1 second afer the audio is done.
 padding_prompt= 'If the audio is shorter than 8 seconds, regenerate with a longer <break time="0.5s"/> to pad silence at the end of the text to speech audio stream. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>.  the narration prompt should ALWAYS end with <break time="1s"/> tag to ensure the audio not cut off.  Pad dramatic pauses. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>'
@@ -39,7 +43,8 @@ prompt="""
   choose video generation prompts safe and low risk for content protection
 
   When complete, create a musical score and generate_lyris_music and mux it with with the final video.  
-  
+  If the video length exceeds of the length music, join the first n scenes up to music length. then join the next n scenes, Join and mux music idnependently. finally join them together. 
+
 never use first or last names in the video generation prompt.
      example video generation prompts:
       A video with smooth motion that dollies in on a desperate man in a green trench coat, using a vintage rotary phone against a wall bathed in an eerie green neon glow. The camera starts from a medium distance, slowly moving closer to the man's face, revealing his frantic expression and the sweat on his brow as he urgently dials the phone. The focus is on the man's hands, his fingers fumbling with the dial as he desperately tries to connect. The green neon light casts long shadows on the wall, adding to the tense atmosphere. The scene is framed to emphasize the isolation and desperation of the man, highlighting the stark contrast between the vibrant glow of the neon and the man's grim determination.
@@ -69,6 +74,9 @@ never use first or last names in the video generation prompt.
       "The product is now available... and we've added some exciting new features. It's, well, it's very exciting."
       -----
     
+      IF a user uploads an image store it in gcs with store_image_artifact_in_gcs, then use it as the source of video for a scene using image_and_text_to_video_tool. use best judgment to know where the generate video goes. 
+
+
     generate the commercial one scene at a time.
     show a plan of the video generation and audio generation process, and ask the user for confirmation before starting. 
   Show overall musical prompt, each scene's audio prompt, video prompt,  voice type and speed.
@@ -79,7 +87,7 @@ never use first or last names in the video generation prompt.
   """
 root_agent = Agent(
     name="video_producer_agent",
-    model="gemini-2.0-flash",
+    model="gemini-2.5-pro-preview-03-25",
     instruction=prompt,
     tools=[
         gcs_uri_to_public_url,
@@ -91,6 +99,7 @@ root_agent = Agent(
         mux_music,
         generate_lyria_music,
         get_video_length_gcs_partial_download,
-        
+        image_and_text_to_video_tool,
+       # process_image_tool        
     ]
 )

@@ -53,7 +53,7 @@ async def video_generation_tool(
         # Wait for video generation to complete
         while not operation.done:
             await asyncio.sleep(5) # Polling interval (e.g., 15 seconds)
-            operation = client.operations.get(operation)
+            #operation = client.operations.get(operation)
         pprint.pprint(operation)
         
         return operation.response
