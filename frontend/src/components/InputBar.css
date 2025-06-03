@@ -1,0 +1,52 @@
+.input-bar {
+  display: flex;
+  align-items: center; /* Vertically align items in the input bar */
+  padding: 15px; /* Increased padding for a more spacious feel */
+  border-top: 1px solid #ddd; /* Clearer separator line */
+  background-color: #f8f9fa; /* Light background for the input bar */
+  min-height: 60px; /* Minimum height for the bar */
+  box-sizing: border-box;
+}
+
+.input-bar input[type="text"] {
+  flex-grow: 1; /* Input field takes available space */
+  padding: 12px 18px; /* More padding inside input */
+  border: 1px solid #ccc;
+  border-radius: 25px; /* More pronounced rounded input field */
+  margin-right: 12px; /* Space between input and button */
+  font-size: 1em;
+  outline: none; /* Remove default focus outline */
+  transition: border-color 0.2s ease-in-out;
+}
+
+.input-bar input[type="text"]:focus {
+  border-color: #007bff; /* Highlight focus with primary color */
+}
+
+.input-bar input[type="text"]:disabled {
+  background-color: #e9ecef; /* Indicate disabled state */
+  cursor: not-allowed;
+}
+
+.input-bar button {
+  padding: 12px 25px; /* More padding for a larger button */
+  background-color: #007bff; /* Primary blue */
+  color: white;
+  border: none;
+  border-radius: 25px; /* Matching rounded button */
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 500; /* Slightly bolder text */
+  transition: background-color 0.2s ease-in-out;
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.input-bar button:hover {
+  background-color: #0056b3; /* Darker blue on hover */
+}
+
+.input-bar button:disabled {
+  background-color: #a0c7e4; /* Lighter, desaturated blue when disabled */
+  color: #f0f0f0;
+  cursor: not-allowed;
+}

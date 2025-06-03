@@ -1,0 +1,46 @@
+.message {
+  padding: 10px 15px; /* Increased padding for better spacing */
+  border-radius: 20px; /* More rounded corners */
+  max-width: 75%; /* Max width of a message bubble */
+  word-wrap: break-word; /* Ensures long words don't overflow */
+  line-height: 1.4; /* Improved readability */
+  /* margin-bottom is handled by 'gap' in MessageList.css */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Subtle shadow for depth */
+}
+
+.message p {
+  margin: 0; /* Remove default paragraph margin */
+  font-size: 1em; /* Base font size */
+}
+
+/* User messages */
+.message.user {
+  background-color: #007bff; /* Primary blue */
+  color: white;
+  align-self: flex-end; /* Aligns to the right */
+  margin-left: auto; /* Ensures it aligns to the end of the flex container */
+  border-bottom-right-radius: 5px; /* "Tail" effect for user */
+}
+
+/* Model messages (renamed from .bot to .model to match App.js state) */
+.message.model {
+  background-color: #e9ecef; /* Light grey, distinct from user */
+  color: #333; /* Dark text for readability */
+  align-self: flex-start; /* Aligns to the left */
+  margin-right: auto; /* Ensures it aligns to the start of the flex container */
+  border-bottom-left-radius: 5px; /* "Tail" effect for model */
+}
+
+/* System messages - moved from App.css */
+.message.system {
+  background-color: #f8f9fa; /* Even lighter grey or a subtle color */
+  color: #6c757d; /* Muted text color */
+  font-style: italic;
+  font-size: 0.9em; /* Slightly smaller text */
+  text-align: center;
+  align-self: center; /* Centered within the message list */
+  max-width: 90%; /* Can be wider as it's informational */
+  padding: 8px 12px;
+  border-radius: 8px; /* Less rounded than chat messages */
+  box-shadow: none; /* Typically no shadow for system messages */
+}
