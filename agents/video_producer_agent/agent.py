@@ -17,7 +17,6 @@ from .chirp_audio import  text_to_speech
 from .tools import gcs_uri_to_public_url
 from .video_join_tool import video_join_tool
 from .video_generation_tool import video_generation_tool
-from .image_process import  process_image_tool
 
 # we cam add this into the prompt to padd the audio. otherwise, the video gets truncated 1 second afer the audio is done.
 padding_prompt= 'If the audio is shorter than 8 seconds, regenerate with a longer <break time="0.5s"/> to pad silence at the end of the text to speech audio stream. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>.  the narration prompt should ALWAYS end with <break time="1s"/> tag to ensure the audio not cut off.  Pad dramatic pauses. To pad 1 second use <break time="1s"/> To pad 2 seconds use <break time="2s"/>'

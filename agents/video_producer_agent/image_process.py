@@ -7,49 +7,7 @@ import uuid
 
 from .upload_image import store_image_artifact_in_gcs
 import os
-from adk.api.tool_next import tool
-from adk.api.tool_next import ToolInput
 
-@tool
-def save_uploaded_image(tool_input: ToolInput) -> str:
-  """
-  Saves an uploaded image from the tool input to a local directory.
-
-  This tool iterates through the content parts of the input, finds the first
-  image, and saves it to an 'uploads' folder.
-
-  Args:
-    tool_input: The input provided to the tool by the ADK framework.
-
-    Returns:
-        The GCS URI of the uploaded image or an error message string.
-  """
-  # Create a directory to store uploads if it doesn't exist
-  if not os.path.exists('uploads'):
-    os.makedirs('uploads')
-
-  image_part = None
-  # Find the first image part in the input
-  for part in tool_input.content_parts:
-    if part.mime_type and part.mime_type.startswith('image/'):
-      image_part = part
-      break
-
-  if image_part:
-    process_image(part.mime_type,image_part.data)
-    # Construct a file path
-    file_name = f"uploaded_image.{image_part.mime_type.split('/')[1]}"
-    file_path = os.path.join('uploads', file_name)
-
-    # The file data is in the 'data' attribute as bytes
-    with open(file_path, 'wb') as f:
-      f.write(image_part.data)
-
-    return f"Image successfully saved to {file_path}"
-  else:
-    return "No image found in the input."
-  
-  
 def process_image(mime_type: str, data: bytes) -> str:
     """Processes and uploads an image to Google Cloud Storage (GCS).
 
