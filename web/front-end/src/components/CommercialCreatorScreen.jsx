@@ -3,7 +3,7 @@ import { ArrowUpTrayIcon, PhotoIcon } from '@heroicons/react/24/solid'; // Examp
 
 function CommercialCreatorScreen() {
   const [description, setDescription] = useState('');
-  const [images, setImages] = useState([]); // Array of { file: File, previewUrl: string, caption: string }
+  const [images, setImages] = useState([]); // Array of { file: File, previewUrl: string, prompt: string }
   const fileInputRef = useRef(null);
 
   const handleDescriptionChange = (event) => {
@@ -19,23 +19,23 @@ function CommercialCreatorScreen() {
     const newImages = files.map(file => ({
       file,
       previewUrl: URL.createObjectURL(file),
-      caption: ''
+      prompt: ''
     }));
     setImages(prevImages => [...prevImages, ...newImages]);
   };
 
-  const handleCaptionChange = (index, caption) => {
+  const handlePromptChange = (index, prompt) => {
     setImages(prevImages =>
       prevImages.map((image, i) =>
-        i === index ? { ...image, caption } : image
+        i === index ? { ...image, prompt } : image
       )
     );
   };
 
   const handleSubmit = () => {
     console.log('Commercial Description:', description);
-    console.log('Images with Captions:', images.map(img => ({ fileName: img.file.name, caption: img.caption, size: img.file.size, type: img.file.type })));
-    // For actual file objects, you might log: images.map(img => ({ file: img.file, caption: img.caption }))
+    console.log('Images with Prompts:', images.map(img => ({ fileName: img.file.name, prompt: img.prompt, size: img.file.size, type: img.file.type })));
+    // For actual file objects, you might log: images.map(img => ({ file: img.file, prompt: img.prompt }))
     // However, logging the full File object might be too verbose for console.
   };
 
@@ -63,12 +63,37 @@ function CommercialCreatorScreen() {
             />
           </div>
 
+          {images.length > 0 && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-700">Image Previews & Prompts</h3>
+              <div className="flex flex-row gap-4 overflow-x-auto pb-4">
+                {images.map((image, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-3 shadow-sm w-full flex-shrink-0" style={{maxWidth: '150px'}}>
+                    <img
+                      src={image.previewUrl}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-md mb-2"
+                      onLoad={() => URL.revokeObjectURL(image.previewUrl)} // Clean up object URL after load
+                    />
+                    <input
+                      type="text"
+                      value={image.prompt}
+                      onChange={(e) => handlePromptChange(index, e.target.value)}
+                      placeholder="Enter prompt..."
+                      className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <h2 className="text-xl font-semibold text-gray-700 mb-3">Upload Images</h2>
             <button
               type="button"
               onClick={handleImageUploadClick}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg inline-flex items-center justify-center space-x-2 transition duration-150 ease-in-out"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg inline-flex items-center justify-center space-x-2 transition duration-150 ease-in-out"
             >
               <ArrowUpTrayIcon className="h-6 w-6" />
               <span>Upload Images</span>
@@ -82,31 +107,6 @@ function CommercialCreatorScreen() {
               accept="image/*"
             />
           </div>
-
-          {images.length > 0 && (
-            <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-700">Image Previews & Captions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {images.map((image, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-3 shadow-sm">
-                    <img
-                      src={image.previewUrl}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-40 object-cover rounded-md mb-2"
-                      onLoad={() => URL.revokeObjectURL(image.previewUrl)} // Clean up object URL after load
-                    />
-                    <input
-                      type="text"
-                      value={image.caption}
-                      onChange={(e) => handleCaptionChange(index, e.target.value)}
-                      placeholder="Enter caption..."
-                      className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div className="pt-6">
             <button
