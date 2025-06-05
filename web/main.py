@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 import uvicorn
 
 # --- THIS IS THE KEY CHANGE ---
@@ -11,8 +12,10 @@ from agents.video_producer_agent.agent import root_agent
 # from agent_backend.image_process import save_uploaded_image
 
 app = FastAPI()
+#TODO this is pretty stupid. serve better
+@app.mount("/", StaticFiles(directory="web/frontend/build"), name="frontend")
 
-@app.post("/generate-commercial")
+@app.post("/run_sse")
 async def generate_commercial(prompt: str):
     try:
         # No changes needed here, the agent is already imported
