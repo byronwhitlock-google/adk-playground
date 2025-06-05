@@ -68,11 +68,11 @@ function CommercialCreatorScreen() {
               <h3 className="text-lg font-medium text-gray-700">Image Previews & Prompts</h3>
               <div className="flex flex-row gap-4 overflow-x-auto pb-4">
                 {images.map((image, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-3 shadow-sm w-full max-w-xs flex-shrink-0">
+                  <div key={index} className="border border-gray-200 rounded-lg p-3 shadow-sm w-full flex-shrink-0" style={{maxWidth: '150px'}}>
                     <img
                       src={image.previewUrl}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-40 object-cover rounded-md mb-2"
+                      className="w-full h-32 object-cover rounded-md mb-2"
                       onLoad={() => URL.revokeObjectURL(image.previewUrl)} // Clean up object URL after load
                     />
                     <input
