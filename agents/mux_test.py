@@ -47,6 +47,7 @@ async def run_mux_audio_test():
             video_uri=test_video_uri,
             audio_uri=test_audio_uri,
             end_time_offset=3.23, # Example: ensure audio is muxed for this duration
+            text_stream_content="This is a test of the captions"
         )
         print("\n--- Mux Audio Tool Execution Completed Successfully! ---")
         print(f"Muxed output available at: {final_output_uri}")
@@ -61,14 +62,8 @@ async def run_mux_audio_test():
     except Exception as e:
         print(f"\n--- Mux Audio Tool Execution FAILED ---")
         print(f"An error occurred: {type(e).__name__} - {e}")
-        print("\nPlease check the following:")
-        print("  - Your Google Cloud project ID and location are correct.")
-        print("  - The Transcoder API is enabled for your project.")
-        print("  - The GCS input URIs are valid and accessible by the Transcoder service account.")
-        print("  - The GCS output path (defined in mux_audio) is a valid bucket path and writable.")
-        print("  - The input video (MP4) and audio files are in the expected formats.")
-        # Consider re-raising the exception if this is part of an automated test suite that needs to catch failures
-        # raise e 
+            # Consider re-raising the exception if this is part of an automated test suite that needs to catch failures
+        raise e 
         # sys.exit(1) # Removed as per request
 
 if __name__ == "__main__":

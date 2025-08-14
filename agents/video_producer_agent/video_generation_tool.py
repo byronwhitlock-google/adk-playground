@@ -46,7 +46,7 @@ async def video_generation_tool(
 
         # Create an operation to generate a video
         operation =  client.models.generate_videos(
-            model="veo-2.0-generate-001",
+            model="veo-3.0-generate-001",
             prompt=prompt,
             config=generate_video_config,
         )

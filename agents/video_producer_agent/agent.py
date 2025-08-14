@@ -86,7 +86,7 @@ never use first or last names in the video generation prompt.
   """
 root_agent = Agent(
     name="video_producer_agent",
-    model="gemini-2.5-pro-preview-03-25",
+    model="gemini-2.5-pro",
     instruction=prompt,
     tools=[
         gcs_uri_to_public_url,
